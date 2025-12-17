@@ -40,7 +40,7 @@ interface ProjectSelectorProps {
   projects: ProjectIndexEntry[];
   onSelectProject: (id: string) => void;
   onImportNew: () => void;
-  onLoadSample: () => void;
+  onLoadSample: (projectId: string) => void;
 }
 
 const ProjectSelector: React.FC<ProjectSelectorProps> = ({
@@ -74,15 +74,34 @@ const ProjectSelector: React.FC<ProjectSelectorProps> = ({
         </button>
 
         <button
-          onClick={onLoadSample}
+          onClick={() => onLoadSample('bell-bottoms')}
           className="p-6 bg-zinc-900/50 border border-zinc-800 rounded-xl text-left hover:border-zinc-600 transition group"
         >
           <div className="text-3xl mb-3">🎬</div>
           <div className="text-lg font-bold text-white group-hover:text-zinc-300 transition">
-            Load Sample Project
+            Bell Bottoms
           </div>
           <div className="text-sm text-zinc-400">
-            Bell Bottoms demo screenplay
+            Time-travel action comedy
+          </div>
+        </button>
+      </div>
+
+      {/* Sample Projects */}
+      <div className="mb-8">
+        <h2 className="text-sm font-bold text-zinc-500 uppercase mb-4">Sample Projects</h2>
+        <button
+          onClick={() => onLoadSample('8-billion-genies')}
+          className="w-full p-4 bg-gradient-to-br from-purple-900/20 to-pink-900/20 border border-purple-500/30 rounded-lg text-left hover:border-purple-500/60 transition group flex items-center gap-4"
+        >
+          <div className="text-3xl">🧞</div>
+          <div className="flex-1">
+            <div className="font-medium text-zinc-200 group-hover:text-white">
+              8 Billion Genies
+            </div>
+            <div className="text-sm text-zinc-400">
+              Fantasy ensemble comedy - When everyone gets a wish
+            </div>
           </div>
         </button>
       </div>
@@ -202,17 +221,17 @@ const Root: React.FC = () => {
   };
 
   // Handle sample project load
-  const handleLoadSample = async () => {
+  const handleLoadSample = async (projectId: string) => {
     setMode('loading');
     try {
-      const data = await loadBundledProject('bell-bottoms');
+      const data = await loadBundledProject(projectId);
       saveProject(data);
       setActiveProject(data.config.id);
       setProjectData(data);
       setProjects(getProjectsIndex());
       setMode('project');
     } catch (err) {
-      setError('Failed to load sample project');
+      setError(`Failed to load project: ${projectId}`);
       setMode('selector');
     }
   };
