@@ -184,7 +184,7 @@ export const parseFountainToReact = (line: string, _index: number): ParsedLine =
 /**
  * Lint script content for common issues
  */
-export const lintScript = (content: string, scene: Scene): LintIssue[] => {
+export const lintScript = (content: string, _scene: Scene): LintIssue[] => {
   const issues: LintIssue[] = [];
   const lines = content.split('\n');
 

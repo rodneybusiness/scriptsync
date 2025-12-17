@@ -44,10 +44,10 @@ const TimelineView: React.FC<TimelineViewProps> = ({ onSelectScene, scriptData }
 
   // Calculate connections for SVG
   const renderConnections = () => {
-    return flattenedScenes.flatMap((sourceScene, sIdx) => {
+    return flattenedScenes.flatMap((sourceScene) => {
       if (!sourceScene.connections) return [];
 
-      return sourceScene.connections.map((conn, cIdx) => {
+      return sourceScene.connections.map((conn, connIdx) => {
         const targetScene = flattenedScenes.find(s => s.id === conn.targetSceneId);
         if (!targetScene) return null;
 
@@ -72,7 +72,7 @@ const TimelineView: React.FC<TimelineViewProps> = ({ onSelectScene, scriptData }
           '#a78bfa';
 
         return (
-          <g key={`${sourceScene.id}-${conn.targetSceneId}-${cIdx}`}>
+          <g key={`${sourceScene.id}-${conn.targetSceneId}-${connIdx}`}>
             <path
               d={`M ${startXAdjusted} ${sourceY} C ${startXAdjusted + (isSourcePrimary ? 50 : -50)} ${sourceY}, ${endXAdjusted + (isTargetPrimary ? 50 : -50)} ${targetY}, ${endXAdjusted} ${targetY}`}
               fill="none"

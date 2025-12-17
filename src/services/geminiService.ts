@@ -12,7 +12,7 @@ import { Scene, ProjectConfig } from "../config/types";
 // AI INITIALIZATION
 // =============================================================================
 
-const getAI = () => new GoogleGenAI({ apiKey: process.env.API_KEY });
+const getAI = () => new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
 const MODEL = "gemini-2.0-flash";
 
 // =============================================================================
@@ -50,7 +50,6 @@ NEXT SCENE: ${next ? `${next.title} - ${next.summary}` : "END OF FILM"}
 const buildProjectContext = (config: ProjectConfig): string => {
   const genres = config.genres.join(', ');
   const themes = config.themes.join(', ');
-  const styleRefs = config.ai.styleReferences.join(' / ');
   const constraints = config.ai.uniqueConstraints.length > 0
     ? `\nUNIQUE CONSTRAINTS:\n${config.ai.uniqueConstraints.map(c => `- ${c}`).join('\n')}`
     : '';
@@ -131,11 +130,9 @@ export const generateDialogue = async (
   scene: Scene,
   character: string,
   intent: string,
-  allScenes: Scene[],
+  _allScenes: Scene[],
   config: ProjectConfig
 ): Promise<string> => {
-  const projectContext = buildProjectContext(config);
-  const globalContext = buildGlobalContext(allScenes);
   const styleRef = config.ai.styleReferences.join(' / ') || 'Natural, character-driven';
 
   const prompt = `
@@ -190,7 +187,6 @@ export const chatWithScriptDoctor = async (
   allScenes: Scene[],
   config: ProjectConfig
 ): Promise<string> => {
-  const projectContext = buildProjectContext(config);
   const globalContext = buildGlobalContext(allScenes);
 
   try {

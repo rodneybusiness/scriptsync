@@ -13,7 +13,7 @@ import CharacterDashboard from './components/CharacterDashboard';
 import ContextPanel from './components/ContextPanel';
 import BeatBoard from './components/BeatBoard';
 import ExportModal from './components/ExportModal';
-import { Scene, BoneyardItem, Sequence } from './config/types';
+import { Scene, BoneyardItem } from './config/types';
 
 type ViewMode = 'script' | 'timeline' | 'characters' | 'board';
 

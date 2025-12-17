@@ -5,7 +5,7 @@
  * eliminating the need for hard-coded character lists, themes, etc.
  */
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { ProjectConfig, ProjectData, Sequence, CharacterConfig } from './types';
 
 // =============================================================================
@@ -29,27 +29,6 @@ interface ProjectContextValue {
 }
 
 // =============================================================================
-// DEFAULT/EMPTY CONFIG
-// =============================================================================
-
-const emptyConfig: ProjectConfig = {
-  id: 'untitled',
-  title: 'Untitled Project',
-  description: '',
-  genres: [],
-  logline: '',
-  characters: [],
-  themes: [],
-  ai: {
-    styleReferences: [],
-    toneDescriptor: 'Screenwriter',
-    uniqueConstraints: [],
-  },
-  trackingCategories: ['Plot', 'Character', 'Theme', 'Setup', 'Payoff'],
-  noteAuthors: [],
-};
-
-// =============================================================================
 // CONTEXT CREATION
 // =============================================================================
 
@@ -67,8 +46,8 @@ interface ProjectProviderProps {
 export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children, projectData }) => {
   const [config] = useState<ProjectConfig>(projectData.config);
   const [sequences, setSequences] = useState<Sequence[]>(projectData.sequences);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [isLoading] = useState(false);
+  const [error] = useState<string | null>(null);
 
   // Derived values
   const mainCharacters = config.characters.filter(c => c.role === 'main');

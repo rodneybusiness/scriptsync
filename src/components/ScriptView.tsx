@@ -2,7 +2,7 @@
  * ScriptView - Main script editing and viewing component
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Scene, LintIssue } from '../config/types';
 import { parseFountainToReact, calculatePacingScore, getPacingColor, lintScript } from '../services/scriptUtils';
 import { stopSpeaking } from '../services/ttsService';
