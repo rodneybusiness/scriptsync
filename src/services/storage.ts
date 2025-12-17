@@ -385,3 +385,62 @@ export const getStorageStats = (): { used: number; available: number; projects: 
     projects: projects.length,
   };
 };
+
+// =============================================================================
+// MIGRATIONS
+// =============================================================================
+
+/**
+ * Migrate "HUMAN POPULATION" project to "8 Billion Genies"
+ * This runs automatically on import
+ */
+export const migrateHumanPopulationProject = (): void => {
+  try {
+    // Find and rename project data
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key?.startsWith('scriptsync_project_')) {
+        const data = localStorage.getItem(key);
+        if (data) {
+          const parsed = JSON.parse(data) as ProjectData;
+          if (parsed.config.title.includes('HUMAN POPULATION')) {
+            // Update the project
+            parsed.config.title = '8 Billion Genies';
+            const oldId = parsed.config.id;
+            parsed.config.id = '8-billion-genies';
+
+            // Save with new key
+            localStorage.setItem(PROJECT_DATA_KEY('8-billion-genies'), JSON.stringify(parsed));
+
+            // Remove old key if different
+            if (key !== PROJECT_DATA_KEY('8-billion-genies')) {
+              localStorage.removeItem(key);
+            }
+
+            // Update active project if needed
+            if (getActiveProject() === oldId) {
+              setActiveProject('8-billion-genies');
+            }
+
+            console.log('Migrated HUMAN POPULATION to 8 Billion Genies');
+            break;
+          }
+        }
+      }
+    }
+
+    // Update project index
+    const index = getProjectsIndex();
+    const updated = index.map(p =>
+      p.title.includes('HUMAN POPULATION')
+        ? { ...p, id: '8-billion-genies', title: '8 Billion Genies' }
+        : p
+    );
+    localStorage.setItem(PROJECTS_INDEX_KEY, JSON.stringify(updated));
+  } catch (error) {
+    console.error('Migration failed:', error);
+  }
+};
+
+// Run migration on module load
+migrateHumanPopulationProject();
