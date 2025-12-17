@@ -4,7 +4,7 @@
  * A context-aware screenwriting environment with AI-powered analysis.
  */
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useProject } from './config/ProjectContext';
 import Navigation from './components/Navigation';
 import ScriptView from './components/ScriptView';
@@ -14,10 +14,15 @@ import ContextPanel from './components/ContextPanel';
 import BeatBoard from './components/BeatBoard';
 import ExportModal from './components/ExportModal';
 import { Scene, BoneyardItem } from './config/types';
+import { scheduleAutoSave } from './services/storage';
 
 type ViewMode = 'script' | 'timeline' | 'characters' | 'board';
 
-const App: React.FC = () => {
+interface AppProps {
+  onBackToProjects?: () => void;
+}
+
+const App: React.FC<AppProps> = ({ onBackToProjects }) => {
   const { config, sequences, setSequences } = useProject();
 
   const allScenes = useMemo(() => sequences.flatMap(s => s.scenes), [sequences]);
@@ -36,6 +41,18 @@ const App: React.FC = () => {
       }
     }
   }, [sequences, currentScene?.id, allScenes]);
+
+  // Auto-save when sequences change
+  const autoSave = useCallback(() => {
+    scheduleAutoSave({ config, sequences });
+  }, [config, sequences]);
+
+  useEffect(() => {
+    // Skip initial render
+    if (sequences.length > 0) {
+      autoSave();
+    }
+  }, [sequences, autoSave]);
 
   if (!currentScene) {
     return (
@@ -133,6 +150,20 @@ const App: React.FC = () => {
               </svg>
               Export
             </button>
+            {onBackToProjects && (
+              <>
+                <div className="w-px h-4 bg-zinc-800"></div>
+                <button
+                  onClick={onBackToProjects}
+                  className="text-xs font-bold uppercase text-zinc-500 hover:text-white transition flex items-center gap-1"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                  </svg>
+                  Projects
+                </button>
+              </>
+            )}
             <div className="w-px h-4 bg-zinc-800"></div>
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>

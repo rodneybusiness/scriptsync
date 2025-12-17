@@ -9,3 +9,4 @@ export { default as CharacterDashboard } from './CharacterDashboard';
 export { default as BeatBoard } from './BeatBoard';
 export { default as TimelineView } from './TimelineView';
 export { default as ExportModal } from './ExportModal';
+export { default as ImportWizard } from './ImportWizard';
