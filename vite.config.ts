@@ -13,4 +13,27 @@ export default defineConfig({
       '@projects': path.resolve(__dirname, './src/projects'),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // React core
+          'react-vendor': ['react', 'react-dom'],
+          // AI/Ingestion services (large, not always needed)
+          'ai-services': [
+            './src/services/geminiService.ts',
+            './src/services/ingestion/aiProcessor.ts',
+            './src/services/ingestion/arcTracker.ts',
+          ],
+          // Ingestion pipeline
+          'ingestion': [
+            './src/services/ingestion/pipeline.ts',
+            './src/services/ingestion/parsers.ts',
+          ],
+        },
+      },
+    },
+    // Increase warning limit slightly since we're code splitting
+    chunkSizeWarningLimit: 400,
+  },
 });

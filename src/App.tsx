@@ -4,17 +4,26 @@
  * A context-aware screenwriting environment with AI-powered analysis.
  */
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, Suspense, lazy } from 'react';
 import { useProject } from './config/ProjectContext';
 import Navigation from './components/Navigation';
 import ScriptView from './components/ScriptView';
-import TimelineView from './components/TimelineView';
-import CharacterDashboard from './components/CharacterDashboard';
 import ContextPanel from './components/ContextPanel';
-import BeatBoard from './components/BeatBoard';
-import ExportModal from './components/ExportModal';
 import { Scene, BoneyardItem } from './config/types';
 import { scheduleAutoSave } from './services/storage';
+import { ErrorBoundary, AIErrorBoundary } from './components/ErrorBoundary';
+import {
+  BeatBoardSkeleton,
+  TimelineSkeleton,
+  CharacterDashboardSkeleton,
+  Spinner,
+} from './components/LoadingStates';
+
+// Lazy load heavy components
+const TimelineView = lazy(() => import('./components/TimelineView'));
+const CharacterDashboard = lazy(() => import('./components/CharacterDashboard'));
+const BeatBoard = lazy(() => import('./components/BeatBoard'));
+const ExportModal = lazy(() => import('./components/ExportModal'));
 
 type ViewMode = 'script' | 'timeline' | 'characters' | 'board';
 
@@ -176,43 +185,67 @@ const App: React.FC<AppProps> = ({ onBackToProjects }) => {
         <div className="flex-1 flex overflow-hidden relative">
           {viewMode === 'script' && (
             <>
-              <ScriptView
-                scene={currentScene}
-                allScenes={allScenes}
-                onUpdateScript={(newContent) => handleUpdateScript(currentScene.id, newContent)}
-                onSelectScene={handleNavigate}
-              />
-              <ContextPanel
-                scene={currentScene}
-                allScenes={allScenes}
-                boneyard={boneyard}
-                addToBoneyard={addToBoneyard}
-              />
+              <ErrorBoundary level="component">
+                <ScriptView
+                  scene={currentScene}
+                  allScenes={allScenes}
+                  onUpdateScript={(newContent) => handleUpdateScript(currentScene.id, newContent)}
+                  onSelectScene={handleNavigate}
+                />
+              </ErrorBoundary>
+              <AIErrorBoundary fallbackMessage="AI features temporarily unavailable. Script editing still works.">
+                <ContextPanel
+                  scene={currentScene}
+                  allScenes={allScenes}
+                  boneyard={boneyard}
+                  addToBoneyard={addToBoneyard}
+                />
+              </AIErrorBoundary>
             </>
           )}
 
           {viewMode === 'board' && (
-            <BeatBoard
-              sequences={sequences}
-              onSelectScene={handleNavigate}
-            />
+            <ErrorBoundary level="component">
+              <Suspense fallback={<BeatBoardSkeleton />}>
+                <BeatBoard
+                  sequences={sequences}
+                  onSelectScene={handleNavigate}
+                />
+              </Suspense>
+            </ErrorBoundary>
           )}
 
           {viewMode === 'timeline' && (
-            <TimelineView
-              onSelectScene={handleNavigate}
-              scriptData={sequences}
-            />
+            <ErrorBoundary level="component">
+              <Suspense fallback={<TimelineSkeleton />}>
+                <TimelineView
+                  onSelectScene={handleNavigate}
+                  scriptData={sequences}
+                />
+              </Suspense>
+            </ErrorBoundary>
           )}
 
           {viewMode === 'characters' && (
-            <CharacterDashboard onSelectScene={handleNavigate} />
+            <ErrorBoundary level="component">
+              <Suspense fallback={<CharacterDashboardSkeleton />}>
+                <CharacterDashboard onSelectScene={handleNavigate} />
+              </Suspense>
+            </ErrorBoundary>
           )}
         </div>
 
         {/* Export Modal */}
         {isExportOpen && (
-          <ExportModal sequences={sequences} onClose={() => setIsExportOpen(false)} />
+          <Suspense fallback={
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+              <div className="bg-zinc-900 rounded-lg p-8">
+                <Spinner size="lg" />
+              </div>
+            </div>
+          }>
+            <ExportModal sequences={sequences} onClose={() => setIsExportOpen(false)} />
+          </Suspense>
         )}
       </main>
     </div>

@@ -7,7 +7,7 @@
  * 3. Import new project via wizard
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import { ProjectProvider, loadProject as loadBundledProject } from './config/ProjectContext';
@@ -20,7 +20,11 @@ import {
   setActiveProject,
   ProjectIndexEntry,
 } from './services/storage';
-import ImportWizard from './components/ImportWizard';
+import { ErrorBoundary } from './components/ErrorBoundary';
+import { FullPageLoading } from './components/LoadingStates';
+
+// Lazy load the import wizard (heavy component with AI processing)
+const ImportWizard = lazy(() => import('./components/ImportWizard'));
 
 // =============================================================================
 // APP MODES
@@ -265,10 +269,12 @@ const Root: React.FC = () => {
 
     case 'import':
       return (
-        <ImportWizard
-          onComplete={handleImportComplete}
-          onCancel={() => setMode('selector')}
-        />
+        <Suspense fallback={<FullPageLoading message="Loading Import Wizard..." />}>
+          <ImportWizard
+            onComplete={handleImportComplete}
+            onCancel={() => setMode('selector')}
+          />
+        </Suspense>
       );
 
     case 'project':
@@ -290,6 +296,8 @@ const Root: React.FC = () => {
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <Root />
+    <ErrorBoundary level="app">
+      <Root />
+    </ErrorBoundary>
   </React.StrictMode>
 );

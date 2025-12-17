@@ -12,8 +12,79 @@ import { Scene, ProjectConfig } from "../config/types";
 // AI INITIALIZATION
 // =============================================================================
 
-const getAI = () => new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
+const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 const MODEL = "gemini-2.0-flash";
+
+/**
+ * Check if AI is available (API key is set)
+ */
+export const isAIAvailable = (): boolean => {
+  return Boolean(API_KEY && API_KEY.length > 0 && API_KEY !== 'your_api_key_here');
+};
+
+/**
+ * Get the AI client, or throw a helpful error if not configured
+ */
+const getAI = () => {
+  if (!isAIAvailable()) {
+    throw new Error('AI_NOT_CONFIGURED: Gemini API key is not set. Add VITE_GEMINI_API_KEY to your .env.local file.');
+  }
+  return new GoogleGenAI({ apiKey: API_KEY });
+};
+
+/**
+ * Wrapper for AI calls with graceful fallback
+ */
+export const safeAICall = async <T>(
+  aiCall: () => Promise<T>,
+  fallback: T,
+  errorPrefix: string = 'AI Error'
+): Promise<{ result: T; isAI: boolean; error?: string }> => {
+  if (!isAIAvailable()) {
+    return {
+      result: fallback,
+      isAI: false,
+      error: 'AI features are disabled. Set VITE_GEMINI_API_KEY in .env.local to enable.'
+    };
+  }
+
+  try {
+    const result = await aiCall();
+    return { result, isAI: true };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error(`${errorPrefix}:`, error);
+
+    // Check for specific error types
+    if (message.includes('401') || message.includes('API key')) {
+      return {
+        result: fallback,
+        isAI: false,
+        error: 'Invalid API key. Please check your VITE_GEMINI_API_KEY.'
+      };
+    }
+    if (message.includes('429') || message.includes('quota')) {
+      return {
+        result: fallback,
+        isAI: false,
+        error: 'API quota exceeded. Please try again later.'
+      };
+    }
+    if (message.includes('network') || message.includes('fetch')) {
+      return {
+        result: fallback,
+        isAI: false,
+        error: 'Network error. Please check your connection.'
+      };
+    }
+
+    return {
+      result: fallback,
+      isAI: false,
+      error: `AI error: ${message}`
+    };
+  }
+};
 
 // =============================================================================
 // CONTEXT BUILDERS
