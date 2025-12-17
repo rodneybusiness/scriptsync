@@ -900,4 +900,564 @@ export const OPEN_QUESTIONS = {
   ],
 };
 
+// =============================================================================
+// REWRITE GOALS - MASTER TRACKING TABLE
+// =============================================================================
+// Status Key: 🔴 REBREAK/NOT ADDRESSED | 🟡 POLISH | 🟠 REWORK
+
+export type RewriteStatus = '🔴 REBREAK' | '🟡 POLISH' | '🟠 REWORK';
+export type RewritePriority = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
+
+export interface RewriteGoal {
+  id: string;
+  goal: string;
+  actsAffected: string[];
+  priority: RewritePriority;
+  status: RewriteStatus;
+  passType?: string;
+  sources: string[];
+  concreteNextMove: string;
+  currentDraftHandling: Record<string, string>;
+  implementationNotes: string;
+  whatsStillOff: string;
+  parentItem?: string;
+  subItems?: string[];
+}
+
+export const REWRITE_GOALS: RewriteGoal[] = [
+  // ═══════════════════════════════════════════════════════════════════════════
+  // CRITICAL PRIORITY
+  // ═══════════════════════════════════════════════════════════════════════════
+  {
+    id: 'idea-man-theme',
+    goal: 'Idea Man Theme & Presence (Floyd)',
+    actsAffected: ['All', 'esp. 1 & 2'],
+    priority: 'CRITICAL',
+    status: '🟡 POLISH',
+    sources: ['Amazon p.3–4', 'PG/CC p.1'],
+    concreteNextMove: `CUT the "Secret Wing/Clone" sequence. REPLACE it with a "War Room" where Floyd is coldly calculating acceptable losses. Emphasize ego, control, and his self-mythologizing—his belief that he is the exceptional one making hard choices for the greater good.
+Replace the secret wing/clone run with a "war room" that visually lays out Floyd's Scouring math and VIP selection logic.
+Sharpen his dialogue so he's obsessed with being remembered ("They'll know who saved them") not just with control.
+Re-engineer his defeat so he loses specifically because he must take public credit, exposing his lie or overplaying his hand.`,
+    currentDraftHandling: {
+      'first-half': 'Need to look at this more closely for little touches that tee Idea Man up and keep his themes alive',
+      'p.67': 'Justification of them getting let in. (guard can be more confused or we can justify another way)',
+      'p.70-75': 'Floyd can play as a benevolent savior rather than a defensive villain.',
+      'p.73': "Alex's Truth Vision shows a green check over Floyd; he believes his own lies and the seduction works.",
+    },
+    implementationNotes: `Simplify & front-load the key rule about Floyd: "His wish doesn't make his ideas good; it makes people believe they're good." Then:
+1) show early micro-examples of bad-but-compelling Floyd ideas paying off and backfiring;
+2) decide the minimum necessary techno-politics (e.g., pick 2: Hope's Hollow, Exactitude, Dougland) and give each a clear, differentiated function;
+3) reframe the treaty and scouring plan into a cleaner villain line like "I'm going to force everyone's last wish into my hands."
+Make the Hope's Hollow tour, museum, and dinner all covertly dramatize the same core thing: Floyd's ability to hijack consent.
+- Opening montage: Floyd as "child genius" → mocked, sidelined adult
+- Clarify theme: Floyd doesn't care about HAVING good ideas, only about being recognized as the person who had them
+- Add more HH commercials / billboards in Act 1 as an extension of Floyd's ego and worldview
+- Clarify HH rules (admission, brainwashing, what it offers, why Daisy can snap out of it)
+- HH should reflect Floyd's priorities and shortcomings: branding, messaging, hierarchy`,
+    whatsStillOff: `Pg 109: The "Sex Clone" / Remnant Daisy sequence is still present. This reframes Floyd from a "Misguided Messiah" into a creepy pervert and drags the tone back toward Point Grey comedy instead of sophisticated Act 2 villainy.
+Floyd still reads closer to a generic tech messiah than a recognition-addicted Idea Man.
+The "secret wing / sex-clone" material pulls him toward one-off Point Grey absurdity instead of a sophisticated, scary villain.
+HH rules/brainwashing logic are still hazy, which blurs his worldview`,
+  },
+  {
+    id: 'robbies-specialness',
+    goal: "Robbie's Specialness",
+    actsAffected: ['1', '2B', '3'],
+    priority: 'CRITICAL',
+    status: '🟡 POLISH',
+    sources: ['Amazon p.4', 'Meeting notes', 'PG/CC p.1'],
+    parentItem: 'Daisy & Alex as Co-Protagonists',
+    concreteNextMove: `Rewrite Pg 33 so Robbie's wish visibly crosses a line: the fireball should blow the roof off the Lampwick, disintegrate a wall, or otherwise demonstrate "weapon-grade" power that legitimately terrifies June and the others into leaving.`,
+    currentDraftHandling: {
+      'p.1': "Robbie's age changed to 13.",
+      'p.1-31': "Want to look for clear ways to really set up Robbie's specialness. If we do the change to how Robbie makes his wish (in the moment) then it should be teed up so it doesn't feel rushed/out of nowhere.",
+      'p.33': 'His line about "Hope\'s Hollow is real" is good but can be expanded to express his specialness and special POV even more.',
+      'p.35-37': "Look at June's defining of his specialness. (maybe put it all in the second part)",
+      'p.71': "Robbie's \"Soul Blades\" demo for Floyd is visually strong and showcases raw power.",
+      'p.75': 'Added connection between Floyd and Robbie — but is it unclear that Floyd maybe already knows who they are?',
+      'p.80': "How soon until Alex calls out that these seem like a bad idea's person of a good idea? How long until he expresses his goal out loud?",
+      'p.84': 'Can fine tune Floyd moment of outreach to Robbie in school',
+    },
+    implementationNotes: `Track Robbie with three clear phases:
+(1) Escapist power fantasy,
+(2) weaponized / dissociated,
+(3) reclaimed self.
+Give 1–2 small, human choices in each phase: e.g., an earlier moment where he refuses to hurt someone → Floyd's pressure → the exact choice where he knowingly crosses that line at Exactitude.
+After Daisy's wish, give him a quiet beat post-Floyd where he actively chooses to be a kid again (or chooses responsibility in a non-magical way) so the guilt has time to metabolize into growth.
+- ADD: Scene where June/Ed tell Daisy Robbie is a protector and why that matters
+- Emphasize his instinct to help people (inherent + learned from his life circumstances)
+- Give him Superman-level empathy: he feels responsible for others' safety
+- Floyd recognizes Robbie as "one in a million" and projects his own exceptionalism onto him
+- Consider withholding Robbie's wish until the end for emotional and mystery payoff
+- Consider aging him back down to 13 (casting dependent, but thematically stronger)`,
+    whatsStillOff: `Pg 33: The Act 1 transformation is still essentially copy-pasted from Draft 06. The fireball simply ricochets off a shelf instead of reading as weapon-grade power. It does not feel dangerous enough to force them out of the bar or justify June's fear.
+His initial wish/Act-1 transformation still reads as "cool spectacle" more than a truly alarming "if he goes dark, we all go" moment.
+Floyd doesn't clearly articulate Robbie as "one in a billion" mirror of his own exceptionalism.
+The timing/shape of Robbie's wish isn't being fully exploited for mystery/payoff.`,
+  },
+  {
+    id: 'daisy-alex-co-protagonists',
+    goal: 'Daisy & Alex as Co-Protagonists',
+    actsAffected: ['All'],
+    priority: 'CRITICAL',
+    status: '🟡 POLISH',
+    sources: ['Amazon p.4', 'Meeting notes'],
+    subItems: ['clarify-daisy-arc', 'clarify-alex-arc', 'clarify-daisy-alex-relationship', 'robbies-specialness'],
+    concreteNextMove: `Refine Act 3 so Alex actively uses the Truth Wish to diagnose Robbie's corruption earlier and more precisely. The Truth Wish should be a tool in the climax, not just a past inciting device.`,
+    currentDraftHandling: {
+      'p.65': "Alex's Truth Wish launches the investigation.",
+      'p.92': 'Alex spots the green-check glitch.',
+      'p.94': 'Alex\'s line "That\'s not my son" lands strongly.',
+    },
+    implementationNotes: '',
+    whatsStillOff: 'Co-protagonist dynamic is working overall; remaining issue is maximizing use of the Truth Wish in the finale mechanics rather than structure.',
+  },
+  {
+    id: 'global-stakes-scouring',
+    goal: 'Global Stakes / Track the Scouring',
+    actsAffected: ['All', 'esp. 1 & 2A'],
+    priority: 'CRITICAL',
+    status: '🟡 POLISH',
+    sources: ['Amazon p.2–3', 'PG/CC p.1'],
+    concreteNextMove: `Might improve the clock: give a simple recurring frame ("three Scourings left," "x hours until it hits us") across news, Floyd's briefings, and hero dialogue. Ensure every Act-2 timecard and Scouring reference uses that same framework so global stakes feel unified and easy to track.`,
+    currentDraftHandling: {
+      'p.1-30': "Look for little ways to tee up idea of stakes and even the TV so that it doesn't come out of nowhere. Can look at beginning of 8 weeks later, and prior genie rules scene. Can look at really teeing up that it's not great there and they're thinking about leaving even before?",
+      'p.30': 'Breaking News segment where Reporter Barbara is vaporized by an orange blast. (Tweak this — exposition can be hidden a bit more?)',
+      'p.30-61': 'In 2A — read looking for little ways to keep the stakes alive. Maybe people are talking about the scouring to them.',
+      'p.61': 'The Scouring visually chases the bus in Act 2. NEED TO CALL THIS OUT',
+      'p.70s': 'When they meet Floyd he can talk about it more explicitly',
+      'p.89': 'Floyd explicitly mentions Scouring weaponization by Dougland',
+      'p.100': "Floyd lays out plan more explicitly to Daisy — he's getting genies to come to him so he has every remaining genie — through the scouring",
+      'p.118': 'Stakes reasserted in all is lost moment after genies are defeated.',
+    },
+    implementationNotes: `- Seed news broadcasts throughout, tracking the Scouring's movement and timing
+- Establish the Scouring as an immediate, concrete threat before they leave the Lampwick
+- Show various habitat commercials (not just HH) to imply global response
+- Make chaos and danger outside the bar visceral (violence, near-misses, environmental damage)
+- Use the Scouring as a ticking clock through the entire second half`,
+    whatsStillOff: `None. The threat is now visible, immediate, and cinematic. It successfully motivates the exit from the bar.
+Clock language and geography can still be a touch fuzzy; the audience has to infer how Scouring timing, HH's schedule, and Floyd's plan interlock.`,
+  },
+  {
+    id: 'ending-too-easy',
+    goal: 'Ending – Too Easy',
+    actsAffected: ['3'],
+    priority: 'CRITICAL',
+    status: '🔴 REBREAK',
+    sources: ['Amazon p.7–8', 'PG/CC p.2'],
+    concreteNextMove: '',
+    currentDraftHandling: {
+      'p.118': 'Stakes reasserted in all is lost moment after genies are defeated.',
+      'note': "Don't they want us to change the thrown into the moon thing?",
+    },
+    implementationNotes: `- Make the final resolution feel more difficult and hard-won
+- Clarify Tim's plumbing maneuver so the audience can track cause and effect
+- Give Robbie a more clever, character-based way to beat Floyd than "just throwing" something
+- Use Floyd's fatal flaw: his need to be recognized as Idea Man is the key to turning the tables
+- Daisy's final wish must be bigger than just Robbie, specific enough to feel clever and emotionally inevitable
+Treat the climax like a heist: in the rewrite, quietly set up each "move" before it happens (Tim explaining water hammer earlier in bar; a visual of shield/counter-wishes; an earlier near-abuse of the legal wish-ownership trick) and make sure the emotional beat is always foregrounded above plot business: Daisy's paralysis → wish choice; Robbie's internal war → turn; Tim's sacrifice → payoff of his insecurity; Michael/Brenda re-bonding over birth.
+In action description, simplify language around genies' dueling wishes so we're never parsing jargon while we should be feeling.`,
+    whatsStillOff: `Cause-and-effect in the climax is hard to follow; the water-hammer move feels improvised rather than planned.
+Robbie's win is mostly brute force, not character-clever.
+Floyd's defeat doesn't hinge on his Idea Man flaw (need for recognition).
+Daisy's wish reads more generalized than "clever and inevitable."`,
+  },
+  {
+    id: 'clarify-daisy-arc',
+    goal: "Clarify Daisy's Character Arc and its Importance",
+    actsAffected: ['All'],
+    priority: 'CRITICAL',
+    status: '🟡 POLISH',
+    sources: [],
+    parentItem: 'Daisy & Alex as Co-Protagonists',
+    concreteNextMove: '',
+    currentDraftHandling: {
+      'p.1': 'Brings it out more in opening Floyd date.',
+      'p.6/8': 'More character defining opportunities during their fight',
+      'p.22': "Tracking that Daisy's Genie is kinda like her. We can call this out more subtly, even before Alex does.",
+      'p.27': 'Might be an opportunity to hit Daisy character harder, define the way she avoids people. The Alex fight and Robbie conversation.',
+      'p.30-36': "Look for tweaks to really convey Daisy's character.",
+      'p.38': "June's send off and asking of them to take care of Robbie could include slightly more pointed assessment of who they are/where they are in their lives.",
+      'p.67': "She's let in…why",
+      'p.72': "Genie — you let this guy go?! She can convey a reason from her character.",
+      'p.97': 'Added Daisy seeing a weird damaged genie — not sure yet if we keep!',
+    },
+    implementationNotes: `Build Daisy's arc as the moral spine of the movie:
+1) Early: show concrete non-apocalypse examples of her bailing (family, work, relationships) so we feel the pattern.
+2) Mid: dramatize how and why Floyd's version of commitment (safety, status, being "chosen") specifically appeals to her shame about being flaky.
+3) Late: structure the Wish scene as a clear choice between several very good selfish options (her own safety, power, Floyd's offer) vs the scary, selfless "Robbie's okay" wish.
+Make the beat where she can't decide painful, not just banter.`,
+    whatsStillOff: '',
+  },
+  {
+    id: 'clarify-alex-arc',
+    goal: "Clarify Alex's Character Arc and its Importance",
+    actsAffected: ['All'],
+    priority: 'CRITICAL',
+    status: '🟡 POLISH',
+    sources: [],
+    parentItem: 'Daisy & Alex as Co-Protagonists',
+    concreteNextMove: '',
+    currentDraftHandling: {
+      'p.1-34': 'Look for little tweaks to really sell the character.',
+      'p.34': "Alex goes - can this be teed up more. Make him more civic lesson-y, shame everyone.. (should June tee it up a bit more?).",
+      'p.38': "June's send off and asking of them to take care of Robbie could include slightly more pointed assessment of who they are/where they are in their lives.",
+      'act-2a': 'Tracking needed',
+      'act-2b': 'Need to better track him as a co-protagonist and track his wish and active nature.',
+    },
+    implementationNotes: '',
+    whatsStillOff: '',
+  },
+  {
+    id: 'clarify-daisy-alex-relationship',
+    goal: 'Clarify Daisy + Alex Relationship and them as Co-Protagonists',
+    actsAffected: ['All'],
+    priority: 'CRITICAL',
+    status: '🟡 POLISH',
+    sources: [],
+    parentItem: 'Daisy & Alex as Co-Protagonists',
+    concreteNextMove: '',
+    currentDraftHandling: {
+      'initial-date': 'Can make sure we are defining them well/setting them up as a "couple." In fight too.',
+      'second-bathroom-fight': 'Can do things to define them as a couple, including other people noticing.',
+      'reading-scene': 'When he comes out, reads book — keep them connected. This scene is really establishing THE THREE.',
+      'leaving-fight': "When Alex presses Daisy to come - can look for little ways to communicate this? Why does he care if she comes, they hate each other, etc.",
+      'p.38': "June's send off could include slightly more pointed assessment of their relationship thus far, all the stupid fighting they've done. (Can make it more of a shared Alex/Daisy promise to her and re-assert \"the three.\")",
+      'p.38-42': 'Can do little tweaks to frame the Enterprise sequence and thereabouts through the Alex/Daisy/Robbie trio.',
+      'act-2a': "Can frame some of their arguments through the lens of the promise they made to June to rise to the moment/get along. Others present (and Genies) can weigh in on that.",
+    },
+    implementationNotes: '',
+    whatsStillOff: '',
+  },
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // HIGH PRIORITY
+  // ═══════════════════════════════════════════════════════════════════════════
+  {
+    id: 'the-genies',
+    goal: 'The Genies',
+    actsAffected: ['All'],
+    priority: 'HIGH',
+    status: '🟡 POLISH',
+    passType: 'Genies Rules Pass',
+    sources: ['Amazon p.6', 'Meeting notes', 'PG/CC p.2'],
+    subItems: ['genies-rules-pass'],
+    concreteNextMove: `LOCK IT. Preserve Daisy's emotional-support genie, the Genie Spa payoff, and the Genie Vest button.`,
+    currentDraftHandling: {
+      'p.11-16': 'We can intro the whole concept, that they all have personalities, etc; then identify the genie. Should RECAST some so a bit younger-skewing. There\'s an opportunity to delightfully stunt cast even genies that have one line.',
+      'p.22': "Tracking that Daisy's Genie is kinda like her.",
+      'p.27': "More tracking with Daisy + Alex's genie — can hit harder.",
+      'p.64': 'Daisy\'s genie plays as an "emotional support" alter ego.',
+      'p.65': 'When Alex\'s genie gets wished away — feels like should be a bigger deal since we know them. For any genie we\'ve gotten to "know."',
+      'p.117': 'The "Genie Spa" payoff lands.',
+      'p.121': 'The "Genie Vest" moment is a nice added visual.',
+      'p.119': 'Daisy/Genie reunion should be more emotional…what else?',
+    },
+    implementationNotes: `- Daisy's Genie: A "hero genie" with a Taylor Tomlinson / Jennifer Coolidge energy, shit-talker like Daisy, but emotionally attuned
+- Alex's Genie: Nothing like him (downer, critical); Alex insists they're nothing alike while everyone else says they're exactly alike
+- Keep genies visually and vocally present throughout, not just in set pieces
+- Clarify genie rules: imprisonment, wish transfer, hive-mind knowledge, ability to comment on global events
+- Use genies for exposition and to track world changes in a fun, character-based way
+- Let Daisy's relationship with her genie grow, reflecting her internal arc`,
+    whatsStillOff: 'None called out. Genies are playing as intended visually and thematically in these beats.',
+  },
+  {
+    id: 'will-bar-payoff',
+    goal: 'Will & The Bar Payoff',
+    actsAffected: ['3'],
+    priority: 'HIGH',
+    status: '🔴 REBREAK',
+    sources: ['Amazon p.5–6', 'PG/CC p.2'],
+    concreteNextMove: '',
+    currentDraftHandling: {},
+    implementationNotes: `- Reveal that Will is a genie from a previous G-Day who chose to stay in human form
+- Make him the most qualified person to help stop the Scouring (secret history, scars, regrets)
+- Stage the final showdown inside the indestructible Lampwick, paying off everything we've set up about the bar
+- Use Will's specific knowledge and past failures meaningfully in the climax`,
+    whatsStillOff: '',
+  },
+  {
+    id: 'leaving-lampwick',
+    goal: 'Leaving the Lampwick',
+    actsAffected: ['End of Act 1'],
+    priority: 'HIGH',
+    status: '🟡 POLISH',
+    sources: ['Amazon p.4–5', 'PG/CC p.1'],
+    concreteNextMove: `Fix the timeline: change the Pg 26 title card to "8 MONTHS LATER" and ensure dialogue across the script matches that timing so pregnancy and city infrastructure feel credible.`,
+    currentDraftHandling: {
+      'p.32': 'Scouring commercial helps justify leaving the Lampwick.',
+      'p.34': "Ed's health provides added urgency.",
+    },
+    implementationNotes: `- Make the outside danger immediate and visceral at the threshold (someone almost killed, near-fatal moment)
+- Give the group a stronger collective reason to leave than "Ed's health" alone
+- Consider dwindling supplies + Scouring's approach as real pressure
+- Justify the "8 weeks inside" timeline more clearly, or shorten it to something that feels urgent and believable`,
+    whatsStillOff: `Pg 26 vs Pg 73 timeline clash. Title card reads "8 WEEKS LATER" while dialogue references "8 MONTHS," breaking pregnancy and city-build reality.`,
+  },
+  {
+    id: 'villain-plot-visible-earlier',
+    goal: 'Villain Plot Visible Earlier',
+    actsAffected: ['2A', '2B'],
+    priority: 'HIGH',
+    status: '🔴 REBREAK',
+    sources: ['Amazon p.5', 'PG/CC p.1'],
+    concreteNextMove: `Surface Floyd's plan in early/mid-2A via visuals (Scouring models, population boards, VIP criteria) and incomplete explanations from him.
+Give Alex a concrete investigative goal ("prove the numbers are wrong," "find the missing people") and an early win to hook us.
+Let Daisy/Alex articulate a simple counter-plan before Act 3 (e.g., expose Floyd's lie and re-route the Scouring), so we're tracking a genuine cat-and-mouse`,
+    currentDraftHandling: {},
+    implementationNotes: `- Make Floyd's master plan readable by early Act 2 (even if not fully explained)
+- Give heroes a proactive counter-plan once they understand his intent
+- While others are brainwashed in HH, Alex investigates the inconsistencies and clues
+- Alex frees Daisy's genie to help break Daisy out of HH control
+- Build a genuine mystery to uncover around the Scouring and Floyd's real objective
+- In Act 3, Floyd realizes too late he cannot actually control or stop the Scouring`,
+    whatsStillOff: `Floyd's actual objective (weaponizing the Scouring to curate a "worthy" remnant) doesn't snap into focus until very late.
+The heroes stay largely reactive; they lack a clear, proactive counter-plan in 2B.
+Mystery elements (green checks, immunity, timing) aren't yet braided into one central investigative engine.`,
+  },
+  {
+    id: 'immunity-rules',
+    goal: 'The "Immunity" Rules (Daisy/Alex)',
+    actsAffected: ['Act 2', 'Act 3'],
+    priority: 'HIGH',
+    status: '🟡 POLISH',
+    sources: ['Draft 06 vs Draft 07 comparison', 'scanner scene around Pg 66'],
+    concreteNextMove: `Restore a specific line in the Pg 66 scanner scene that flags a "glitch" or "genetic anomaly" in Daisy. This breadcrumb must clearly set up why she can resist/defeat Floyd's brainwashing in Act 3.`,
+    currentDraftHandling: {
+      'p.96': 'Daisy resists the brainwashing at dinner.',
+      'p.66': 'Scanner scene establishes she is "Unused."',
+      'p.80': "How soon until Alex calls out that these seem like a bad idea's person of a good idea? How long until he expresses his goal (and awareness about his wish as a possible immunity rule) out loud?",
+      'p.103': "Daisy is brainwashed and we make a thing out of it — but then it's \"broken\" by Remnant Daisy — is the logic clear enough around how that happens (the breaking), why it works for Daisy before others, etc?",
+    },
+    implementationNotes: `Clarify why Daisy is immune to Floyd's brainwashing and how this pays off in Act 3.
+Restore or invent a single explicit rule in the scanner scene that flags Daisy as different (anomaly, glitch, unclaimed wish, etc.).
+Echo that rule later when she breaks HH conditioning and again in the finale, so her final act feels rule-consistent, not hand-of-writer.
+Clarify in dialogue how Alex's Truth Wish complements this (he can see truth but isn't fully immune), so together they form the necessary combo.`,
+    whatsStillOff: `Cause-and-effect in the climax is hard to follow; the water-hammer move feels improvised rather than planned.
+Robbie's win is mostly brute force, not character-clever.
+Floyd's defeat doesn't hinge on his Idea Man flaw (need for recognition).
+Daisy's wish reads more generalized than "clever and inevitable."`,
+  },
+  {
+    id: 'genies-rules-pass',
+    goal: 'Genies Rules Pass',
+    actsAffected: ['All'],
+    priority: 'HIGH',
+    status: '🟠 REWORK',
+    sources: [],
+    parentItem: 'The Genies',
+    concreteNextMove: `— Maybe visualize rules and call them back a bit more.
+— tie "contradictory wishes cancel each other out" explicitly Floyd's auto-counter system when it happens — call it back.
+
+Shields/havens — visualize — Consider a tiny visual cue: when he wishes, the bar gets a thin shimmering outline for a second. Any outside genie effect that "touches" the walls fizzles with a consistent effect (like rain hitting an invisible umbrella).
+
+Enterprise: when Brenda powers up, the ship's field looks like a scaled-up version of the bar outline. When lasers hit, they either bounce off or crack it.
+Hellstorm: when the Scouring wave hits, show the same outline hugging the bus; the wave passes, outline flickers, but holds.
+
+Payoff: Hope's Hollow
+• The dome should visually be the same language as bar → Enterprise → Hellstorm, just at city scale.
+• When Scouring is discussed, use holograms that clearly show why only wish-protected stuff survives.
+
+Rename "Wish lock" so less a "thing"
+
+Make clearer why Daisy doesn't quite fall for Floyd? (entry scene)
+
+3.3 Wish ownership / Wishpool
+Setup: Entry to Hope's Hollow
+• Make the terms of transfer extremely clear:
+    ◦ On the scanner screen for Daisy, instead of obscure "GENETIC ANOMALY," show:
+        ▪ "WISH STATUS: UNUSED → TRANSFER REQUESTED (HH COLLECTIVE). CONFIRM?"
+    ◦ Concierge: "To live here, you agree your genie serves the greater good of Hope's Hollow."
+    ◦ Daisy taps "Accept" on the tablet. Genie screams as its essence is drawn.
+• Show genies visibly flowing along conduits toward the fountain, so the audience understands the pool is literally everybody's wishes.
+Echo: Idea Man confession
+• When Floyd says "I asked if it'd be alright to take your wish," intercut quick flashes of multiple arrivals signing that same transfer screen.
+• When he gives Daisy her wish back, reverse the VFX: a strand of light peels off the Wishpool, zips into her genie.
+Payoff: War room + final
+• In the war room, the holo should show remaining stored genies as a gauge that ticks down during the battle.
+• When the Wishpool explodes (Tim's water hammer), we see genies re-attaching to owners all over Hope's Hollow.
+This makes the climax clearly "we freed the hostages (wishes), not 'new genies suddenly exist.'"
+
+3.4 Remnants
+Setup: Abe Lincoln / Jim Morrison sequence
+• Daisy's genie explicitly defines "remnants" and "if the wisher dies, the remnant goes." You already have that.
+• Make the visual of Jim exploding and the remnant dust very distinct: white-blue "remnant dust" that's different from regular death.
+Echo: June
+• When June appears, give her a subtle remnant aura (same dust faintly clinging to her).
+• When she fades as Ed dies, use the exact same visual as Jim's disappearance, but in slow, emotional mode.
+Payoff: Remnant Daisy
+• When Daisy and Alex find "wife Daisy," give her the same remnant aura so the audience knows instantly: "She's a clone, not the OG."
+• When they kill her, her death should be physical + remnant dust, tying all three examples together.
+
+Look at wording of Daisy's Robbie wish. Maybe "Make Robbie himself again" or "Give Robbie a choice."`,
+    currentDraftHandling: {},
+    implementationNotes: `Do a rules pass:
+1) List every genie rule & exception; decide which ones matter for story stakes;
+2) Combine / cut edge cases that only appear once;
+3) Introduce each dramatically once as setup before payoffs (e.g., show a small-scale conflicting-wishes cancellation long before the War Genies vs shield), and echo key mechanics in visual form (e.g., same graphic language anytime a counter-wish triggers);
+4) Make sure Daisy's final wish and Robbie's final act are clearly operating on previously-seen rules, not new ones.`,
+    whatsStillOff: '',
+  },
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // MEDIUM PRIORITY
+  // ═══════════════════════════════════════════════════════════════════════════
+  {
+    id: 'brenda-michael-complexity',
+    goal: 'Brenda & Michael – Complexity',
+    actsAffected: ['2', '3'],
+    priority: 'MEDIUM',
+    status: '🟡 POLISH',
+    sources: ['Amazon p.7', 'PG/CC p.1–2'],
+    concreteNextMove: `Rebuild the confrontation so it's primarily about betrayal and agency (Michael making choices for Brenda).
+Clarify "hooked up" in PG-13-safe language so the emotional stakes are concrete.
+Give Michael one clear accountability beat (naming how he's steamrolling her) and let Brenda recommit only after that, so their resolution feels earned.
+Rewrite Pg 98 so the confrontation centers on betrayal, fear, and unmet expectations instead of slapstick. The scene should peak in emotional clarity and vulnerability, then resolve in a hug, not a headbutt.`,
+    currentDraftHandling: {
+      'p.19': "Brenda says she never wanted to bring kids into world. Can we soften/adjust this?",
+      'between': 'When Brenda leaves → Tim hookup — look for little ways to get this story across, get across her energy so the hookup feels teed up.',
+      'p.58': "Brenda's monologue about not wanting kids is strong.",
+      'p.77': "Brenda and Michael's reunion plays sweet.",
+      'p.114': 'Brenda and Michael payoff — she says she was "scared to bring a child into the world."',
+    },
+    implementationNotes: `- Make Michael's pregnancy experience less stereotypical, more specific and emotionally complex
+- Clarify Brenda's frustration: Michael keeps deciding for her instead of with her
+- ADD: Scene where Brenda directly articulates her valid frustrations to Michael
+- Give Michael a moment of genuine accountability and change
+- Earn Brenda's recommitment to the family (currently feels unearned around p.106–110)
+- Clarify what "hooked up" means (vs. just kissing) to avoid tonal confusion
+
+Clarify this as the "what does real partnership look like?" storyline:
+1) Make the transfer wish clearly mutual or clearly not—that ambiguity is powerful if owned;
+2) Ensure Brenda's "Rumspringa" choice is rooted in a specific fear/need that connects to the larger theme, not generic boredom;
+3) Give Michael a real moment of non-jokey agency in forgiving (or not) Brenda/Tim;
+4) Tie Tim's final pipe sacrifice and the birth beat so that his arc is "from shitty plumber to spiritual plumber" and Michael/Brenda's is "from fantasy of perfect partner to reality of flawed, chosen family."`,
+    whatsStillOff: `Pg 98: The fight with Tim reads as slapstick—"chunks of french fry flying"—rather than emotionally grounded conflict about betrayal, fear, and their relationship.
+The confrontation with Tim/Michael leans into broad slapstick, undercutting the emotional stakes.
+What "hooked up" means remains unclear, which muddies the betrayal.
+Brenda's recommitment feels a bit too easy—Michael doesn't fully own how he's been deciding for her.`,
+  },
+  {
+    id: 'tim-character-sacrifice',
+    goal: 'Tim – Character & Sacrifice',
+    actsAffected: ['1', '2', '3'],
+    priority: 'MEDIUM',
+    status: '🟡 POLISH',
+    sources: ['PG/CC p.1–2'],
+    concreteNextMove: `Plant a clear, visual "Water Hammer" danger in Act 1 (during the toilet repair or similar plumbing beat) so the Act 3 payoff feels earned and legible. The audience should already know that this specific plumbing failure can unleash dangerous pressure.`,
+    currentDraftHandling: {
+      'p.117': 'The "Tater Tot" payoff is satisfying and emotionally sticky.',
+    },
+    implementationNotes: `- Make Tim feel more dangerous and unpredictable early, so his presence adds tension
+- Clarify his wish-pool mission: what he believes he's doing and why
+- Rework his sacrifice so it accomplishes something concrete in plot terms
+- Avoid the impression that he sacrifices himself for nothing`,
+    whatsStillOff: `Pg 111: The "Water Hammer" logic plays like technobabble. Audience does not understand why clogging a pipe frees the genies; it feels made up on the spot.`,
+  },
+  {
+    id: 'act-2a-momentum',
+    goal: 'Act 2A Momentum',
+    actsAffected: ['2A'],
+    priority: 'MEDIUM',
+    status: '🔴 REBREAK',
+    sources: ['Amazon p.6–7', 'PG/CC various'],
+    concreteNextMove: '',
+    currentDraftHandling: {},
+    implementationNotes: `- CUT or compress much of the "settling in" material at HH
+- Jump sooner to June/Ed/Michael's arrival to keep story moving
+- Move the first Exactitude meeting earlier to establish stakes and ideology
+- Make Alex's investigation the engine of 2A
+- Let group survival needs and HH's structure drive behavior once they arrive`,
+    whatsStillOff: '',
+  },
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // LOW PRIORITY
+  // ═══════════════════════════════════════════════════════════════════════════
+  {
+    id: 'pg13-rating-discipline',
+    goal: 'PG-13 Rating Discipline',
+    actsAffected: ['All'],
+    priority: 'LOW',
+    status: '🟠 REWORK',
+    sources: ['Amazon p.6'],
+    concreteNextMove: `Run a surgical PG-13 pass on the flagged gags and kills. Replace graphic or juvenile lines with emotional terror or awe:
+- Change "exploding heads" / "blood and guts" and "starchy fragments" language to imagery like "dissolving into dust" or "energy displacement."
+- Excise "Goth Nipples," "Coming out of my GOOCH!," and "watching his pubies come in," and rephrase Michael's physical complaints as genuine fear about the life growing inside him.`,
+    currentDraftHandling: {
+      'p.5': 'Poopcan',
+      'p.48': 'Language like "exploding heads" and "blood and guts."',
+      'p.82': 'Language around "Goth Nipples" retained.',
+      'p.116': '"Coming out of my GOOCH!" remains.',
+      'p.58': '"watching his pubies come in."',
+      'p.117': 'Tim blown into "starchy fragments."',
+    },
+    implementationNotes: `- Dial down graphic violence, especially the p.99 fight described as "very R-rated"
+- Reduce profanity and harsh language where possible
+- Aim consistently for a four-quadrant tone: intense but accessible to families`,
+    whatsStillOff: `Draft 07 still leans into R-rated gore and juvenile body-humor that breaks the intended Spielbergian awe and PG-13, four-quadrant mandate. Amazon's "no exploding heads" line is being violated in both language and imagery.`,
+  },
+  {
+    id: 'minor-clarity-fixes',
+    goal: 'Minor Clarity Fixes and other things',
+    actsAffected: ['Various'],
+    priority: 'LOW',
+    status: '🔴 REBREAK',
+    sources: ['PG/CC p.2', 'Amazon p.8'],
+    concreteNextMove: '— Pitch that Brenda craves french fries so craves Tim.',
+    currentDraftHandling: {},
+    implementationNotes: `- Clarify genie deal math (p.27) so audience can do it in their heads
+- Make Ed's sickness level consistent across scenes
+- Adjust Floyd killing genies so it reads as villainous, not just functional
+- Clarify how Michael's water breaking works on p.106 (staging, cause)
+- Sweep through remaining page-specific clarity notes`,
+    whatsStillOff: '',
+  },
+  {
+    id: 'replace-enterprise',
+    goal: 'Replace Enterprise?',
+    actsAffected: ['2A'],
+    priority: 'LOW',
+    status: '🟠 REWORK',
+    sources: [],
+    concreteNextMove: '',
+    currentDraftHandling: {},
+    implementationNotes: "Look at that section and decide if there's a better idea.",
+    whatsStillOff: '',
+  },
+];
+
+// =============================================================================
+// HELPER FUNCTIONS FOR REWRITE TRACKING
+// =============================================================================
+
+export const getGoalsByStatus = (status: RewriteStatus): RewriteGoal[] =>
+  REWRITE_GOALS.filter(g => g.status === status);
+
+export const getGoalsByPriority = (priority: RewritePriority): RewriteGoal[] =>
+  REWRITE_GOALS.filter(g => g.priority === priority);
+
+export const getRebreakGoals = (): RewriteGoal[] =>
+  REWRITE_GOALS.filter(g => g.status === '🔴 REBREAK');
+
+export const getCriticalGoals = (): RewriteGoal[] =>
+  REWRITE_GOALS.filter(g => g.priority === 'CRITICAL');
+
+// Summary stats
+export const REWRITE_SUMMARY = {
+  total: REWRITE_GOALS.length,
+  byStatus: {
+    rebreak: REWRITE_GOALS.filter(g => g.status === '🔴 REBREAK').length,
+    polish: REWRITE_GOALS.filter(g => g.status === '🟡 POLISH').length,
+    rework: REWRITE_GOALS.filter(g => g.status === '🟠 REWORK').length,
+  },
+  byPriority: {
+    critical: REWRITE_GOALS.filter(g => g.priority === 'CRITICAL').length,
+    high: REWRITE_GOALS.filter(g => g.priority === 'HIGH').length,
+    medium: REWRITE_GOALS.filter(g => g.priority === 'MEDIUM').length,
+    low: REWRITE_GOALS.filter(g => g.priority === 'LOW').length,
+  },
+};
+
 export default config;
