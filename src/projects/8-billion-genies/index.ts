@@ -1,8 +1,8 @@
 /**
  * 8 Billion Genies - Project Export
  *
- * This module exports the complete project data for the 8 Billion Genies screenplay.
- * Adaptation of the Image Comics series by Charles Soule & Ryan Browne.
+ * Complete project data for the 8 Billion Genies screenplay adaptation.
+ * Includes integrated Amazon and Point Grey/Counter Culture feedback notes.
  */
 
 import { ProjectData } from '../../config/types';
