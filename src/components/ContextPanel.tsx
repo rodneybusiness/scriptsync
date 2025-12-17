@@ -109,7 +109,7 @@ const ContextPanel: React.FC<ContextPanelProps> = ({ scene, allScenes, boneyard,
     setChatHistory(newHistory);
     setIsChatting(true);
 
-    const response = await chatWithScriptDoctor(newHistory, userMsg, allScenes, config);
+    const response = await chatWithScriptDoctor(newHistory, userMsg, allScenes, config, scene);
     setChatHistory([...newHistory, { role: 'model', parts: [{ text: response }] }]);
     setIsChatting(false);
   };

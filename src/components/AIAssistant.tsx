@@ -11,6 +11,7 @@ import {
   generateDialogue,
   generateAlternativeBeat,
   checkContinuity,
+  chatWithScriptDoctor,
   isAIAvailable,
 } from '../services/geminiService';
 import { Spinner } from './LoadingStates';
@@ -399,11 +400,22 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({
     setLoading(true);
 
     try {
-      // Use scene analysis for context-aware response
-      const response = await analyzeSceneGap(
-        { ...scene, summary: `User question: ${userMessage}\n\nOriginal summary: ${scene.summary}` },
+      // Convert local message format to Gemini chat history format
+      const history = messages.map(msg => ({
+        role: msg.role === 'user' ? 'user' : 'model',
+        parts: [{ text: msg.text }]
+      }));
+
+      // Add current scene context to the message
+      const contextualMessage = `[Current scene: "${scene.title}" - ${scene.summary}]\n\nUser: ${userMessage}`;
+
+      // Use proper chat function for conversational AI with current scene context
+      const response = await chatWithScriptDoctor(
+        history,
+        contextualMessage,
         allScenes,
-        config
+        config,
+        scene // Pass current scene for tiered context
       );
       setMessages(prev => [...prev, { role: 'ai', text: response }]);
     } catch {
@@ -411,7 +423,7 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({
     } finally {
       setLoading(false);
     }
-  }, [input, available, scene, allScenes, config]);
+  }, [input, available, scene, allScenes, config, messages]);
 
   if (!isExpanded) {
     return (
