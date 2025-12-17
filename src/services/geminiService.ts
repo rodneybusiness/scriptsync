@@ -1,19 +1,99 @@
 /**
- * Gemini AI Service - Template-based prompts for script analysis
+ * AI Service - Template-based prompts for script analysis
+ *
+ * Now powered by Claude (Anthropic) for SOTA performance.
+ * Uses Claude Opus 4.5 for complex analysis and Claude Sonnet 4 for faster tasks.
  *
  * All prompts are dynamically generated based on the active project's configuration.
  * This allows the same tool to work for any screenplay project.
  */
 
-import { GoogleGenAI } from "@google/genai";
 import { Scene, ProjectConfig } from "../config/types";
 
 // =============================================================================
-// AI INITIALIZATION
+// AI INITIALIZATION - CLAUDE (ANTHROPIC)
 // =============================================================================
 
-const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-const MODEL = "gemini-2.0-flash";
+const ANTHROPIC_API_KEY = import.meta.env.VITE_ANTHROPIC_API_KEY;
+
+// Model selection - SOTA Claude models (latest versions)
+const MODELS = {
+  // Claude Opus 4 - Most capable, best for complex reasoning
+  OPUS_4: "claude-opus-4-20250514",
+  // Claude Sonnet 4 - Fast and capable
+  SONNET_4: "claude-sonnet-4-20250514",
+  // Claude Sonnet 4.5 - Latest Sonnet, enhanced creative writing
+  SONNET_4_5: "claude-sonnet-4-5-20250514",
+};
+
+// Task-to-model mapping for optimal performance
+const MODEL_FOR_TASK = {
+  // Complex analysis tasks use Opus 4 (most capable)
+  sceneAnalysis: MODELS.OPUS_4,
+  continuityCheck: MODELS.OPUS_4,
+  // Creative tasks use Sonnet 4.5 (latest, enhanced creativity)
+  dialogue: MODELS.SONNET_4_5,
+  alternatives: MODELS.SONNET_4_5,
+  // Chat uses Sonnet 4 (fast response time)
+  chat: MODELS.SONNET_4,
+};
+
+// Anthropic API configuration
+const ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages";
+const ANTHROPIC_VERSION = "2023-06-01";
+
+/**
+ * Make a request to Claude API
+ */
+const callClaude = async (
+  messages: { role: "user" | "assistant"; content: string }[],
+  options: {
+    model?: string;
+    maxTokens?: number;
+    system?: string;
+    temperature?: number;
+  } = {}
+): Promise<string> => {
+  const {
+    model = MODELS.SONNET_4,
+    maxTokens = 4096,
+    system,
+    temperature = 0.7,
+  } = options;
+
+  const body: Record<string, unknown> = {
+    model,
+    max_tokens: maxTokens,
+    messages,
+    temperature,
+  };
+
+  if (system) {
+    body.system = system;
+  }
+
+  const response = await fetch(ANTHROPIC_API_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": ANTHROPIC_API_KEY,
+      "anthropic-version": ANTHROPIC_VERSION,
+      "anthropic-dangerous-direct-browser-access": "true",
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: { message: response.statusText } }));
+    throw new Error(error.error?.message || `API error: ${response.status}`);
+  }
+
+  const data = await response.json();
+
+  // Extract text from Claude's response format
+  const textContent = data.content?.find((c: { type: string }) => c.type === "text");
+  return textContent?.text || "No response generated.";
+};
 
 // =============================================================================
 // SESSION MEMORY (In-memory storage for corrections and preferences)
@@ -227,49 +307,14 @@ export const detectCharacterCorrection = (userMessage: string): { character: str
 };
 
 // =============================================================================
-// DYNAMIC THINKING BUDGET
+// COMPLEXITY ESTIMATION (For model selection and context optimization)
 // =============================================================================
 
 /**
- * Calculate optimal thinking budget based on task complexity
+ * Estimate task complexity based on various factors.
+ * Used to select between Opus (complex) and Sonnet (simple) models.
  */
-const calculateThinkingBudget = (
-  taskType: 'analysis' | 'dialogue' | 'chat' | 'alternatives' | 'continuity',
-  contextLength: number,
-  complexity: 'low' | 'medium' | 'high' = 'medium'
-): number => {
-  // Base budgets by task type
-  const baseBudgets = {
-    analysis: 2048,
-    dialogue: 1536,
-    chat: 3072,
-    alternatives: 1024,
-    continuity: 2048
-  };
-
-  let budget = baseBudgets[taskType];
-
-  // Adjust for context length (more context = more thinking needed)
-  if (contextLength > 5000) {
-    budget = Math.min(budget * 1.5, 8192);
-  } else if (contextLength > 10000) {
-    budget = Math.min(budget * 2, 8192);
-  }
-
-  // Adjust for complexity
-  if (complexity === 'high') {
-    budget = Math.min(budget * 1.5, 8192);
-  } else if (complexity === 'low') {
-    budget = Math.max(budget * 0.75, 512);
-  }
-
-  return Math.round(budget);
-};
-
-/**
- * Estimate task complexity based on various factors
- */
-const estimateComplexity = (
+export const estimateComplexity = (
   scene: Scene,
   allScenes: Scene[],
   hasConnections: boolean
@@ -302,17 +347,16 @@ const estimateComplexity = (
  * Check if AI is available (API key is set)
  */
 export const isAIAvailable = (): boolean => {
-  return Boolean(API_KEY && API_KEY.length > 0 && API_KEY !== 'your_api_key_here');
+  return Boolean(ANTHROPIC_API_KEY && ANTHROPIC_API_KEY.length > 0 && ANTHROPIC_API_KEY !== 'your_api_key_here');
 };
 
 /**
- * Get the AI client, or throw a helpful error if not configured
+ * Validate API key is configured, throw helpful error if not
  */
-const getAI = () => {
+const validateAPIKey = () => {
   if (!isAIAvailable()) {
-    throw new Error('AI_NOT_CONFIGURED: Gemini API key is not set. Add VITE_GEMINI_API_KEY to your .env.local file.');
+    throw new Error('AI_NOT_CONFIGURED: Claude API key is not set. Add VITE_ANTHROPIC_API_KEY to your .env.local file.');
   }
-  return new GoogleGenAI({ apiKey: API_KEY });
 };
 
 /**
@@ -327,7 +371,7 @@ export const safeAICall = async <T>(
     return {
       result: fallback,
       isAI: false,
-      error: 'AI features are disabled. Set VITE_GEMINI_API_KEY in .env.local to enable.'
+      error: 'AI features are disabled. Set VITE_ANTHROPIC_API_KEY in .env.local to enable.'
     };
   }
 
@@ -339,21 +383,21 @@ export const safeAICall = async <T>(
     console.error(`${errorPrefix}:`, error);
 
     // Check for specific error types
-    if (message.includes('401') || message.includes('API key')) {
+    if (message.includes('401') || message.includes('authentication') || message.includes('API key')) {
       return {
         result: fallback,
         isAI: false,
-        error: 'Invalid API key. Please check your VITE_GEMINI_API_KEY.'
+        error: 'Invalid API key. Please check your VITE_ANTHROPIC_API_KEY.'
       };
     }
-    if (message.includes('429') || message.includes('quota')) {
+    if (message.includes('429') || message.includes('rate') || message.includes('quota')) {
       return {
         result: fallback,
         isAI: false,
-        error: 'API quota exceeded. Please try again later.'
+        error: 'API rate limit exceeded. Please try again later.'
       };
     }
-    if (message.includes('network') || message.includes('fetch')) {
+    if (message.includes('network') || message.includes('fetch') || message.includes('Failed to fetch')) {
       return {
         result: fallback,
         isAI: false,
@@ -771,14 +815,18 @@ export const analyzeSceneGap = async (
   allScenes: Scene[],
   config: ProjectConfig
 ): Promise<string> => {
+  validateAPIKey();
+
   const projectContext = buildProjectContext(config);
   // Use enhanced tiered context instead of basic detailed context
   const storyContext = buildTieredContext(scene, allScenes, config);
 
-  const prompt = `
-Role: Elite Hollywood Script Doctor (${config.ai?.toneDescriptor || 'Professional'}).
+  const systemPrompt = `You are an Elite Hollywood Script Doctor (${config.ai?.toneDescriptor || 'Professional'}).
 Style Reference: ${config.ai?.styleReferences?.join(', ') || 'Professional screenwriter'}
 
+You analyze screenplays with the precision of a seasoned story editor and the creativity of an award-winning writer.`;
+
+  const userPrompt = `
 === PROJECT CONTEXT ===
 ${projectContext}
 
@@ -810,21 +858,19 @@ ${SCENE_ANALYSIS_EXAMPLE}
 Use the same structure as the example above. Be specific to THIS scene's content.
   `.trim();
 
-  // Calculate dynamic thinking budget
-  const complexity = estimateComplexity(scene, allScenes, (scene.connections?.length || 0) > 0);
-  const thinkingBudget = calculateThinkingBudget('analysis', prompt.length, complexity);
-
   try {
-    const response = await getAI().models.generateContent({
-      model: MODEL,
-      contents: prompt,
-      config: {
-        thinkingConfig: { thinkingBudget },
+    // Use Opus 4 for complex scene analysis (most capable model)
+    return await callClaude(
+      [{ role: "user", content: userPrompt }],
+      {
+        model: MODEL_FOR_TASK.sceneAnalysis,
+        system: systemPrompt,
+        maxTokens: 4096,
+        temperature: 0.7,
       }
-    });
-    return response.text || "No analysis generated.";
+    );
   } catch (error) {
-    console.error("Gemini Error:", error);
+    console.error("Claude Error:", error);
     return "Error analyzing scene. Please check API key.";
   }
 };
@@ -840,6 +886,8 @@ export const generateDialogue = async (
   allScenes: Scene[],
   config: ProjectConfig
 ): Promise<string> => {
+  validateAPIKey();
+
   const styleRef = config.ai?.styleReferences?.join(' / ') || 'Natural, character-driven';
 
   // Build comprehensive character context with voice samples
@@ -848,11 +896,13 @@ export const generateDialogue = async (
   // Get session memory for this character
   const sessionContext = buildSessionMemoryContext(character);
 
-  const prompt = `
-Role: Screenwriter (${styleRef} style).
+  const systemPrompt = `You are a Screenwriter working in the ${styleRef} style.
 Project: "${config.title}" (${config.genres.join('/')}).
 Logline: ${config.logline}
 
+You write dialogue that is authentic to each character's voice, avoids being "on the nose," and serves the story's themes.`;
+
+  const userPrompt = `
 === CHARACTER PROFILE ===
 ${characterContext}
 
@@ -885,16 +935,18 @@ For each option, briefly explain WHY it fits this character's voice.
   `.trim();
 
   try {
-    const response = await getAI().models.generateContent({
-      model: MODEL,
-      contents: prompt,
-      config: {
-        thinkingConfig: { thinkingBudget: 2048 }, // Increased for voice analysis
+    // Use Sonnet 4.5 for creative dialogue generation (enhanced creativity)
+    return await callClaude(
+      [{ role: "user", content: userPrompt }],
+      {
+        model: MODEL_FOR_TASK.dialogue,
+        system: systemPrompt,
+        maxTokens: 2048,
+        temperature: 0.8, // Slightly higher for creative dialogue
       }
-    });
-    return response.text || "No dialogue generated.";
+    );
   } catch (error) {
-    console.error("Gemini Error:", error);
+    console.error("Claude Error:", error);
     return "Error generating dialogue.";
   }
 };
@@ -910,6 +962,8 @@ export const chatWithScriptDoctor = async (
   config: ProjectConfig,
   currentScene?: Scene
 ): Promise<string> => {
+  validateAPIKey();
+
   // Use tiered context if a current scene is provided, otherwise use global context
   const storyContext = currentScene
     ? buildTieredContext(currentScene, allScenes, config)
@@ -923,12 +977,7 @@ export const chatWithScriptDoctor = async (
   // Get session memory context (without character filter for general chat)
   const sessionContext = buildSessionMemoryContext();
 
-  try {
-    const chat = getAI().chats.create({
-      model: MODEL,
-      history: history,
-      config: {
-        systemInstruction: `
+  const systemPrompt = `
 You are the Lead Story Architect for "${config.title}".
 Genre: ${config.genres.join(', ')}
 Logline: ${config.logline}
@@ -968,15 +1017,27 @@ Channel the sensibilities of: ${config.ai.styleReferences.join(', ')}
 
 === SPECIAL INSTRUCTIONS ===
 If the user corrects you or expresses a preference (e.g., "actually, this character wouldn't say that" or "I prefer shorter dialogue"), acknowledge it and incorporate it into future responses. These corrections help you learn their vision for the project.
-        `.trim(),
-        thinkingConfig: { thinkingBudget: 4096 },
-      }
-    });
+  `.trim();
 
-    const result = await chat.sendMessage({ message: newMessage });
-    return result.text || "I couldn't generate a response.";
+  try {
+    // Convert Gemini history format to Claude format
+    const claudeMessages: { role: "user" | "assistant"; content: string }[] = history.map(msg => ({
+      role: msg.role === 'user' ? 'user' as const : 'assistant' as const,
+      content: msg.parts[0].text
+    }));
+
+    // Add the new message
+    claudeMessages.push({ role: "user", content: newMessage });
+
+    // Use Sonnet 4 for chat (fast response time)
+    return await callClaude(claudeMessages, {
+      model: MODEL_FOR_TASK.chat,
+      system: systemPrompt,
+      maxTokens: 4096,
+      temperature: 0.7,
+    });
   } catch (error) {
-    console.error("Gemini Chat Error:", error);
+    console.error("Claude Chat Error:", error);
     return "Sorry, I encountered an error connecting to the AI.";
   }
 };
@@ -991,10 +1052,14 @@ export const generateAlternativeBeat = async (
   allScenes: Scene[],
   config: ProjectConfig
 ): Promise<string> => {
+  validateAPIKey();
+
   const storyContext = buildDetailedContext(scene, allScenes);
 
-  const prompt = `
-Role: Creative Screenwriter for "${config.title}" (${config.genres.join('/')}).
+  const systemPrompt = `You are a Creative Screenwriter for "${config.title}" (${config.genres.join('/')}).
+You excel at brainstorming innovative story alternatives while maintaining narrative consistency.`;
+
+  const userPrompt = `
 Task: Brainstorm 3 radically different alternative versions of a specific story beat.
 
 CONTEXT:
@@ -1021,16 +1086,18 @@ Each alternative MUST:
   `.trim();
 
   try {
-    const response = await getAI().models.generateContent({
-      model: MODEL,
-      contents: prompt,
-      config: {
-        thinkingConfig: { thinkingBudget: 1024 },
+    // Use Sonnet 4.5 for creative brainstorming (enhanced creativity)
+    return await callClaude(
+      [{ role: "user", content: userPrompt }],
+      {
+        model: MODEL_FOR_TASK.alternatives,
+        system: systemPrompt,
+        maxTokens: 2048,
+        temperature: 0.9, // Higher for more creative alternatives
       }
-    });
-    return response.text || "No alternatives generated.";
+    );
   } catch (error) {
-    console.error("Gemini Error:", error);
+    console.error("Claude Error:", error);
     return "Error generating alternatives.";
   }
 };
@@ -1076,6 +1143,8 @@ export const checkContinuity = async (
   allScenes: Scene[],
   config: ProjectConfig
 ): Promise<string> => {
+  validateAPIKey();
+
   // Use tiered context for comprehensive continuity checking
   const tieredContext = buildTieredContext(scene, allScenes, config);
 
@@ -1105,10 +1174,11 @@ ${scene.connections?.map(c => {
     .filter(c => scene.scriptContent?.toUpperCase().includes(c.name.toUpperCase()))
     .map(c => c.name);
 
-  const prompt = `
-Role: Script Supervisor / Continuity Expert for "${config.title}".
+  const systemPrompt = `You are a Script Supervisor / Continuity Expert for "${config.title}".
 You have an eagle eye for plot holes, timeline issues, and prop/location inconsistencies.
+Your analysis is thorough, professional, and actionable.`;
 
+  const userPrompt = `
 ${tieredContext}
 
 ${connectionMap}
@@ -1144,21 +1214,19 @@ Provide a thorough continuity report using the same format as the example.
 Use severity markers: 🔴 CRITICAL, ⚠️ WARNING, 💡 SUGGESTION, ✅ VERIFIED
   `.trim();
 
-  // Calculate dynamic thinking budget for this complex task
-  const complexity = estimateComplexity(scene, allScenes, true);
-  const thinkingBudget = calculateThinkingBudget('continuity', prompt.length, complexity);
-
   try {
-    const response = await getAI().models.generateContent({
-      model: MODEL,
-      contents: prompt,
-      config: {
-        thinkingConfig: { thinkingBudget },
+    // Use Opus 4 for complex continuity analysis (most capable)
+    return await callClaude(
+      [{ role: "user", content: userPrompt }],
+      {
+        model: MODEL_FOR_TASK.continuityCheck,
+        system: systemPrompt,
+        maxTokens: 4096,
+        temperature: 0.5, // Lower for more precise analysis
       }
-    });
-    return response.text || "No continuity analysis generated.";
+    );
   } catch (error) {
-    console.error("Gemini Error:", error);
+    console.error("Claude Error:", error);
     return "Error checking continuity.";
   }
 };

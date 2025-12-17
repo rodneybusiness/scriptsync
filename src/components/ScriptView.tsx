@@ -3,6 +3,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { useProject } from '../config/ProjectContext';
 import { Scene, LintIssue } from '../config/types';
 import { parseFountainToReact, calculatePacingScore, getPacingColor, lintScript } from '../services/scriptUtils';
 import { stopSpeaking } from '../services/ttsService';
@@ -15,8 +16,11 @@ interface ScriptViewProps {
 }
 
 const ScriptView: React.FC<ScriptViewProps> = ({ scene, allScenes, onUpdateScript, onSelectScene }) => {
+  const { config } = useProject();
+
   // --- STATE ---
   const [isEditing, setIsEditing] = useState(false);
+  const [showLogline, setShowLogline] = useState(true);
   const [editContent, setEditContent] = useState(scene.scriptContent);
   const [activeVariant, setActiveVariant] = useState('A');
 
@@ -133,6 +137,29 @@ const ScriptView: React.FC<ScriptViewProps> = ({ scene, allScenes, onUpdateScrip
 
         {/* CENTER: Script Page */}
         <div className="flex-1 py-12 px-12 lg:px-24 max-w-5xl mx-auto relative">
+
+          {/* Logline Context Banner */}
+          {config.logline && showLogline && (
+            <div className="mb-4 p-3 bg-gradient-to-r from-blue-900/20 to-purple-900/20 rounded-lg border border-blue-900/30 relative">
+              <button
+                onClick={() => setShowLogline(false)}
+                className="absolute top-2 right-2 text-zinc-500 hover:text-zinc-300 text-xs"
+              >
+                ✕
+              </button>
+              <p className="text-[10px] text-blue-400 uppercase tracking-wide mb-1 font-bold">Logline</p>
+              <p className="text-sm text-zinc-300 leading-relaxed pr-6">{config.logline}</p>
+            </div>
+          )}
+
+          {!showLogline && config.logline && (
+            <button
+              onClick={() => setShowLogline(true)}
+              className="mb-4 text-[10px] text-zinc-500 hover:text-zinc-300 uppercase tracking-wide"
+            >
+              Show Logline
+            </button>
+          )}
 
           {/* Header & Toolbar */}
           <div className="mb-8 sticky top-0 bg-zinc-950/95 backdrop-blur z-10 pb-4 border-b border-zinc-800">

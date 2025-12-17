@@ -24,6 +24,7 @@ const TimelineView = lazy(() => import('./components/TimelineView'));
 const CharacterDashboard = lazy(() => import('./components/CharacterDashboard'));
 const BeatBoard = lazy(() => import('./components/BeatBoard'));
 const ExportModal = lazy(() => import('./components/ExportModal'));
+const ProjectOverview = lazy(() => import('./components/ProjectOverview'));
 
 type ViewMode = 'script' | 'timeline' | 'characters' | 'board';
 
@@ -40,6 +41,7 @@ const App: React.FC<AppProps> = ({ onBackToProjects }) => {
   const [viewMode, setViewMode] = useState<ViewMode>('script');
   const [boneyard, setBoneyard] = useState<BoneyardItem[]>([]);
   const [isExportOpen, setIsExportOpen] = useState(false);
+  const [isProjectOverviewOpen, setIsProjectOverviewOpen] = useState(false);
 
   // Sync currentScene when sequences update
   useEffect(() => {
@@ -150,6 +152,18 @@ const App: React.FC<AppProps> = ({ onBackToProjects }) => {
           </div>
 
           <div className="flex items-center gap-4">
+            {/* Project Info Button */}
+            <button
+              onClick={() => setIsProjectOverviewOpen(true)}
+              className="text-xs font-bold uppercase text-zinc-500 hover:text-white transition flex items-center gap-1"
+              title="View project details, themes, and AI settings"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Info
+            </button>
+            <div className="w-px h-4 bg-zinc-800"></div>
             <button
               onClick={() => setIsExportOpen(true)}
               className="text-xs font-bold uppercase text-zinc-500 hover:text-white transition flex items-center gap-1"
@@ -175,8 +189,8 @@ const App: React.FC<AppProps> = ({ onBackToProjects }) => {
             )}
             <div className="w-px h-4 bg-zinc-800"></div>
             <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-              <span className="text-xs text-zinc-400">Gemini Active</span>
+              <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div>
+              <span className="text-xs text-zinc-400">Claude Active</span>
             </div>
           </div>
         </div>
@@ -245,6 +259,19 @@ const App: React.FC<AppProps> = ({ onBackToProjects }) => {
             </div>
           }>
             <ExportModal sequences={sequences} onClose={() => setIsExportOpen(false)} />
+          </Suspense>
+        )}
+
+        {/* Project Overview Modal */}
+        {isProjectOverviewOpen && (
+          <Suspense fallback={
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+              <div className="bg-zinc-900 rounded-lg p-8">
+                <Spinner size="lg" />
+              </div>
+            </div>
+          }>
+            <ProjectOverview isOpen={isProjectOverviewOpen} onClose={() => setIsProjectOverviewOpen(false)} />
           </Suspense>
         )}
       </main>

@@ -58,6 +58,32 @@ const BeatBoard: React.FC<BeatBoardProps> = ({ sequences, onSelectScene }) => {
                   <h2 className="font-bold text-zinc-200 text-sm uppercase tracking-wide truncate pr-2">{seq.title}</h2>
                   <span className="text-[10px] font-mono text-zinc-500">{seq.id}</span>
                 </div>
+
+                {/* Sequence Metadata */}
+                {seq.dramaticQuestion && (
+                  <div className="mb-2 p-2 bg-zinc-800/50 rounded border-l-2 border-emerald-500">
+                    <p className="text-[9px] text-emerald-400 uppercase tracking-wide font-bold mb-0.5">Dramatic Question</p>
+                    <p className="text-[10px] text-zinc-300 leading-snug">{seq.dramaticQuestion}</p>
+                  </div>
+                )}
+
+                {(seq.climax || seq.resolution) && (
+                  <div className="flex gap-2 mb-2">
+                    {seq.climax && (
+                      <div className="flex-1 p-1.5 bg-red-900/10 rounded border border-red-900/30">
+                        <p className="text-[8px] text-red-400 uppercase font-bold">Climax</p>
+                        <p className="text-[9px] text-zinc-400 line-clamp-2">{seq.climax}</p>
+                      </div>
+                    )}
+                    {seq.resolution && (
+                      <div className="flex-1 p-1.5 bg-blue-900/10 rounded border border-blue-900/30">
+                        <p className="text-[8px] text-blue-400 uppercase font-bold">Resolution</p>
+                        <p className="text-[9px] text-zinc-400 line-clamp-2">{seq.resolution}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 <div className="w-full bg-zinc-800 h-1 rounded-full overflow-hidden">
                   <div className="bg-blue-500 h-full transition-all duration-500" style={{ width: `${stats.progress}%` }}></div>
                 </div>

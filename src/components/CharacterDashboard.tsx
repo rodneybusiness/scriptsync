@@ -119,9 +119,36 @@ const CharacterDashboard: React.FC<CharacterDashboardProps> = ({ onSelectScene }
             </div>
           </div>
 
-          {/* DIALOGUE DNA PANEL */}
+          {/* CHARACTER INFO + DIALOGUE DNA PANEL */}
           <div className="bg-gradient-to-br from-zinc-900 to-zinc-950 border border-zinc-800 rounded-xl p-6 flex flex-col shadow-2xl relative overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-purple-600"></div>
+
+            {/* Character Description from Config */}
+            {(() => {
+              const charConfig = config.characters.find(c => c.name === selectedChar);
+              return charConfig && (charConfig.description || charConfig.arc) ? (
+                <div className="mb-6 pb-4 border-b border-zinc-800">
+                  <h2 className="text-sm font-bold text-zinc-100 uppercase tracking-widest mb-3">{selectedChar}</h2>
+                  {charConfig.description && (
+                    <p className="text-xs text-zinc-400 leading-relaxed mb-2">{charConfig.description}</p>
+                  )}
+                  {charConfig.arc && (
+                    <p className="text-xs text-blue-400 italic">
+                      <span className="text-zinc-500">Arc:</span> {charConfig.arc}
+                    </p>
+                  )}
+                  {charConfig.aliases && charConfig.aliases.length > 0 && (
+                    <div className="flex gap-1 mt-2">
+                      <span className="text-[9px] text-zinc-600 uppercase">Also:</span>
+                      {charConfig.aliases.map((alias, i) => (
+                        <span key={i} className="text-[9px] px-1.5 py-0.5 bg-zinc-800 text-zinc-400 rounded">{alias}</span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : null;
+            })()}
+
             <h2 className="text-sm font-bold text-zinc-100 uppercase tracking-widest mb-6 flex items-center gap-2">
               <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />

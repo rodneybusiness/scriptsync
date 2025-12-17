@@ -28,7 +28,7 @@ enum Tab {
   NOTES = 'Notes',
   TRACKING = 'Tracking',
   BONEYARD = 'Boneyard',
-  DOCTOR = 'Dr. Gemini'
+  DOCTOR = 'Dr. Claude'
 }
 
 // Simple Markdown Renderer Component
@@ -249,7 +249,44 @@ const ContextPanel: React.FC<ContextPanelProps> = ({ scene, allScenes, boneyard,
         {/* TRACKING TAB */}
         {activeTab === Tab.TRACKING && (
           <div className="space-y-4">
-            <h3 className="text-sm font-bold text-zinc-100 mb-2">Tracking Areas</h3>
+            {/* Project Themes Section */}
+            {config.themes && config.themes.length > 0 && (
+              <div className="p-3 bg-gradient-to-b from-emerald-900/10 to-transparent rounded-lg border border-emerald-900/30">
+                <h4 className="text-xs font-bold text-emerald-400 uppercase tracking-wide mb-2">Project Themes</h4>
+                <div className="flex flex-wrap gap-1.5">
+                  {config.themes.map((theme, idx) => (
+                    <span
+                      key={idx}
+                      className="px-2 py-1 bg-emerald-900/20 text-emerald-300 text-[10px] rounded-full border border-emerald-700/30"
+                    >
+                      {theme}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* AI Constraints Preview */}
+            {config.ai?.uniqueConstraints && config.ai.uniqueConstraints.length > 0 && (
+              <div className="p-3 bg-gradient-to-b from-red-900/10 to-transparent rounded-lg border border-red-900/30">
+                <h4 className="text-xs font-bold text-red-400 uppercase tracking-wide mb-2">Story Constraints</h4>
+                <div className="space-y-1.5">
+                  {config.ai.uniqueConstraints.slice(0, 3).map((constraint, idx) => (
+                    <p key={idx} className="text-[10px] text-zinc-400 leading-relaxed">
+                      <span className="text-red-400 font-bold mr-1">•</span>
+                      {constraint}
+                    </p>
+                  ))}
+                  {config.ai.uniqueConstraints.length > 3 && (
+                    <p className="text-[10px] text-zinc-600 italic">
+                      +{config.ai.uniqueConstraints.length - 3} more constraints
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <h3 className="text-sm font-bold text-zinc-100 mb-2 pt-2 border-t border-zinc-800">Scene Tracking</h3>
             {scene.tracking.map((item, idx) => (
               <div key={idx} className="group">
                 <h4 className="text-xs font-semibold text-zinc-500 uppercase mb-1 group-hover:text-zinc-300 transition">{item.category}</h4>
@@ -317,25 +354,53 @@ const ContextPanel: React.FC<ContextPanelProps> = ({ scene, allScenes, boneyard,
         {/* DOCTOR TAB */}
         {activeTab === Tab.DOCTOR && (
           <div className="flex flex-col h-full">
-            {/* Memory Panel Toggle */}
-            <div className="flex justify-between items-center mb-3 pb-2 border-b border-zinc-800">
-              <div className="text-xs text-zinc-500">
-                {memoryState.correctionCount > 0 && (
-                  <span className="text-blue-400">{memoryState.correctionCount} corrections learned</span>
-                )}
+            {/* AI Context Header */}
+            <div className="mb-3 pb-3 border-b border-zinc-800">
+              {/* Tone descriptor */}
+              {config.ai?.toneDescriptor && (
+                <div className="mb-2 p-2 bg-blue-900/10 rounded border border-blue-900/30">
+                  <p className="text-[10px] text-blue-400 uppercase tracking-wide mb-1">Tone</p>
+                  <p className="text-xs text-zinc-300 leading-relaxed line-clamp-2">{config.ai.toneDescriptor}</p>
+                </div>
+              )}
+
+              {/* Key Constraints (collapsed preview) */}
+              {config.ai?.uniqueConstraints && config.ai.uniqueConstraints.length > 0 && (
+                <div className="p-2 bg-red-900/10 rounded border border-red-900/30">
+                  <p className="text-[10px] text-red-400 uppercase tracking-wide mb-1">
+                    {config.ai.uniqueConstraints.length} Story Constraints Active
+                  </p>
+                  <p className="text-[10px] text-zinc-500 italic line-clamp-1">
+                    {config.ai.uniqueConstraints[0]}
+                  </p>
+                </div>
+              )}
+
+              {/* Memory Panel Toggle */}
+              <div className="flex justify-between items-center mt-2 pt-2 border-t border-zinc-800/50">
+                <div className="text-xs text-zinc-500">
+                  {memoryState.correctionCount > 0 && (
+                    <span className="text-blue-400">{memoryState.correctionCount} corrections learned</span>
+                  )}
+                </div>
+                <button
+                  onClick={() => setShowMemoryPanel(true)}
+                  className="px-2 py-1 text-[10px] bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-zinc-200 rounded uppercase tracking-wide transition"
+                >
+                  Memory Settings
+                </button>
               </div>
-              <button
-                onClick={() => setShowMemoryPanel(true)}
-                className="px-2 py-1 text-[10px] bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-zinc-200 rounded uppercase tracking-wide transition"
-              >
-                Memory Settings
-              </button>
             </div>
             <div className="flex-1 overflow-y-auto space-y-4 mb-4 min-h-[300px] p-1">
               {chatHistory.length === 0 && (
                 <div className="text-center text-zinc-500 text-sm mt-10 px-4">
                   <p className="mb-2"><strong>Script Doctor is Online</strong></p>
                   <p className="text-xs">I've read "{config.title}". Ask me about continuity, tone, or character voice.</p>
+                  {config.ai?.styleReferences && config.ai.styleReferences.length > 0 && (
+                    <p className="text-[10px] text-zinc-600 mt-2">
+                      Style refs: {config.ai.styleReferences.slice(0, 3).join(', ')}
+                    </p>
+                  )}
                 </div>
               )}
               {chatHistory.map((msg, idx) => (

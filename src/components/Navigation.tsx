@@ -37,7 +37,21 @@ const Navigation: React.FC<NavigationProps> = ({ currentSceneId, onSelectScene }
     <div className="w-72 bg-zinc-950 border-r border-zinc-800 flex flex-col h-full font-sans">
       <div className="p-4 border-b border-zinc-800">
         <h1 className="text-lg font-bold text-zinc-100 tracking-tight">ScriptSync</h1>
-        <p className="text-xs text-zinc-500 uppercase tracking-wider mt-1 mb-4">{config.title}</p>
+        <p className="text-xs text-zinc-500 uppercase tracking-wider mt-1">{config.title}</p>
+
+        {/* Genre Tags */}
+        {config.genres && config.genres.length > 0 && (
+          <div className="flex flex-wrap gap-1 mt-2 mb-3">
+            {config.genres.map((genre, idx) => (
+              <span
+                key={idx}
+                className="px-1.5 py-0.5 bg-purple-900/30 text-purple-300 text-[9px] rounded border border-purple-700/30 font-medium"
+              >
+                {genre}
+              </span>
+            ))}
+          </div>
+        )}
 
         {/* Search Bar */}
         <div className="relative">
@@ -52,6 +66,27 @@ const Navigation: React.FC<NavigationProps> = ({ currentSceneId, onSelectScene }
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
         </div>
+
+        {/* Style References (if any) */}
+        {config.ai?.styleReferences && config.ai.styleReferences.length > 0 && (
+          <div className="mt-3 pt-2 border-t border-zinc-800">
+            <p className="text-[9px] text-zinc-600 uppercase tracking-wide mb-1.5">Style References</p>
+            <div className="flex flex-wrap gap-1">
+              {config.ai.styleReferences.slice(0, 4).map((ref, idx) => (
+                <span
+                  key={idx}
+                  className="px-1.5 py-0.5 bg-zinc-800 text-zinc-400 text-[9px] rounded font-medium"
+                  title={ref}
+                >
+                  {ref.length > 15 ? ref.slice(0, 15) + '...' : ref}
+                </span>
+              ))}
+              {config.ai.styleReferences.length > 4 && (
+                <span className="text-[9px] text-zinc-600">+{config.ai.styleReferences.length - 4}</span>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="flex-1 overflow-y-auto p-2">
