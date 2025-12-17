@@ -1,0 +1,105 @@
+/**
+ * Navigation - Scene browser sidebar
+ *
+ * Uses project context for sequences - no hard-coded data.
+ */
+
+import React, { useState } from 'react';
+import { useProject } from '../config/ProjectContext';
+import { Scene } from '../config/types';
+import { calculatePacingScore, getPacingColor } from '../services/scriptUtils';
+
+interface NavigationProps {
+  currentSceneId: string;
+  onSelectScene: (scene: Scene) => void;
+}
+
+const Navigation: React.FC<NavigationProps> = ({ currentSceneId, onSelectScene }) => {
+  const { config, sequences } = useProject();
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Filter Logic
+  const filteredData = sequences.map(seq => ({
+    ...seq,
+    scenes: seq.scenes.filter(scene => {
+      if (!searchQuery) return true;
+      const q = searchQuery.toLowerCase();
+      return (
+        scene.title.toLowerCase().includes(q) ||
+        scene.summary.toLowerCase().includes(q) ||
+        scene.scriptContent.toLowerCase().includes(q) ||
+        scene.id.includes(q)
+      );
+    })
+  })).filter(seq => seq.scenes.length > 0);
+
+  return (
+    <div className="w-72 bg-zinc-950 border-r border-zinc-800 flex flex-col h-full font-sans">
+      <div className="p-4 border-b border-zinc-800">
+        <h1 className="text-lg font-bold text-zinc-100 tracking-tight">ScriptSync</h1>
+        <p className="text-xs text-zinc-500 uppercase tracking-wider mt-1 mb-4">{config.title}</p>
+
+        {/* Search Bar */}
+        <div className="relative">
+          <input
+            type="text"
+            placeholder="Search scenes, dialogue..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-2 pl-8 text-xs text-zinc-300 focus:border-blue-500 focus:outline-none transition"
+          />
+          <svg className="w-3 h-3 text-zinc-500 absolute left-2.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-2">
+        {filteredData.length === 0 ? (
+          <div className="p-4 text-center text-zinc-500 text-xs italic">
+            No scenes found matching "{searchQuery}"
+          </div>
+        ) : (
+          filteredData.map((seq) => (
+            <div key={seq.id} className="mb-6">
+              <div className="px-3 py-1 mb-2 flex justify-between items-center">
+                <h2 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest truncate" title={seq.title}>
+                  {seq.title.split(':')[0]}
+                </h2>
+              </div>
+              <div className="space-y-0.5">
+                {seq.scenes.map((scene) => {
+                  const pacingScore = calculatePacingScore(scene.scriptContent);
+                  const pacingColor = getPacingColor(pacingScore);
+
+                  return (
+                    <button
+                      key={scene.id}
+                      onClick={() => onSelectScene(scene)}
+                      className={`w-full text-left px-3 py-2 rounded-md text-sm transition-all relative group ${
+                        currentSceneId === scene.id
+                          ? 'bg-zinc-900 text-white shadow-sm'
+                          : 'text-zinc-400 hover:bg-zinc-900 hover:text-zinc-200'
+                      }`}
+                    >
+                      {/* Pacing Heatmap Indicator (Left Border) */}
+                      <div className={`absolute left-0 top-2 bottom-2 w-0.5 rounded-full opacity-50 group-hover:opacity-100 transition ${pacingColor} ${currentSceneId === scene.id ? 'opacity-100' : ''}`}></div>
+
+                      <div className="flex items-center justify-between pl-2">
+                        <span className="truncate text-xs font-medium">
+                          {scene.id} <span className={currentSceneId === scene.id ? 'text-blue-400' : 'text-zinc-500'}>|</span> {scene.title.split(':')[1] || scene.title}
+                        </span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default Navigation;

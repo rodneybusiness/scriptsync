@@ -1,0 +1,35 @@
+{
+  "name": "scriptsync",
+  "version": "1.0.0",
+  "description": "A context-aware screenwriting environment with AI-powered script analysis. Track beats, characters, themes, and continuity across your screenplay.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "new-project": "npx tsx scripts/new-project.ts"
+  },
+  "dependencies": {
+    "react": "^19.2.0",
+    "@google/genai": "^1.30.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.14.0",
+    "@vitejs/plugin-react": "^5.0.0",
+    "typescript": "~5.8.2",
+    "vite": "^6.2.0"
+  },
+  "keywords": [
+    "screenwriting",
+    "screenplay",
+    "script-tracking",
+    "ai-writing",
+    "gemini",
+    "beat-board",
+    "character-arcs"
+  ],
+  "author": "Rodney Rothman",
+  "license": "MIT"
+}
