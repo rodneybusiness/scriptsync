@@ -126,8 +126,12 @@ export interface CharacterConfig {
   name: string;
   role: 'main' | 'supporting' | 'minor';
   description?: string;
+  arc?: string;
   aliases?: string[]; // Alternative names/spellings to track
 }
+
+// Alias for backwards compatibility
+export type Character = CharacterConfig;
 
 export interface AIConfig {
   /** Writing style references (e.g., "Shane Black", "Aaron Sorkin") */
@@ -146,7 +150,7 @@ export interface ProjectConfig {
   /** Display title */
   title: string;
   /** Brief description */
-  description: string;
+  description?: string;
   /** Genre tags */
   genres: string[];
   /** One-sentence logline */
@@ -156,11 +160,13 @@ export interface ProjectConfig {
   /** Central themes to track */
   themes: string[];
   /** AI behavior configuration */
-  ai: AIConfig;
+  ai?: AIConfig;
   /** Tracking categories used in this project */
-  trackingCategories: string[];
+  trackingCategories?: string[];
   /** Note authors (initials) */
-  noteAuthors: string[];
+  noteAuthors?: string[];
+  /** Setting locations */
+  settings?: string[];
   /** Project metadata */
   meta?: {
     createdAt?: Date;

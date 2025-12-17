@@ -121,8 +121,9 @@ NEXT SCENE: ${next ? `${next.title} - ${next.summary}` : "END OF FILM"}
 const buildProjectContext = (config: ProjectConfig): string => {
   const genres = config.genres.join(', ');
   const themes = config.themes.join(', ');
-  const constraints = config.ai.uniqueConstraints.length > 0
-    ? `\nUNIQUE CONSTRAINTS:\n${config.ai.uniqueConstraints.map(c => `- ${c}`).join('\n')}`
+  const ai = config.ai;
+  const constraints = ai?.uniqueConstraints && ai.uniqueConstraints.length > 0
+    ? `\nUNIQUE CONSTRAINTS:\n${ai.uniqueConstraints.map(c => `- ${c}`).join('\n')}`
     : '';
 
   return `
@@ -131,7 +132,7 @@ GENRE: ${genres}
 LOGLINE: ${config.logline}
 THEMES: ${themes}
 ${constraints}
-${config.ai.customInstructions ? `\nADDITIONAL NOTES:\n${config.ai.customInstructions}` : ''}
+${ai?.customInstructions ? `\nADDITIONAL NOTES:\n${ai.customInstructions}` : ''}
   `.trim();
 };
 
@@ -148,8 +149,8 @@ export const analyzeSceneGap = async (
   const storyContext = buildDetailedContext(scene, allScenes);
 
   const prompt = `
-Role: Elite Hollywood Script Doctor (${config.ai.toneDescriptor}).
-Style Reference: ${config.ai.styleReferences.join(', ') || 'Professional screenwriter'}
+Role: Elite Hollywood Script Doctor (${config.ai?.toneDescriptor || 'Professional'}).
+Style Reference: ${config.ai?.styleReferences?.join(', ') || 'Professional screenwriter'}
 
 PROJECT CONTEXT:
 ${projectContext}
@@ -204,7 +205,7 @@ export const generateDialogue = async (
   _allScenes: Scene[],
   config: ProjectConfig
 ): Promise<string> => {
-  const styleRef = config.ai.styleReferences.join(' / ') || 'Natural, character-driven';
+  const styleRef = config.ai?.styleReferences?.join(' / ') || 'Natural, character-driven';
 
   const prompt = `
 Role: Screenwriter (${styleRef} style).
@@ -280,7 +281,7 @@ When answering, always consider:
 3. Is the pacing tight?
 4. Does it serve the project's themes?
 
-${config.ai.uniqueConstraints.length > 0 ? `
+${config.ai?.uniqueConstraints && config.ai.uniqueConstraints.length > 0 ? `
 SPECIAL CONSIDERATIONS FOR THIS PROJECT:
 ${config.ai.uniqueConstraints.map(c => `- ${c}`).join('\n')}
 ` : ''}
