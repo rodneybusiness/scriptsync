@@ -8,8 +8,13 @@ import { Scene, NoteType, BoneyardItem } from '../config/types';
 import {
   analyzeSceneGap,
   chatWithScriptDoctor,
-  generateAlternativeBeat
+  generateAlternativeBeat,
+  detectAndStoreCorrection,
+  detectCharacterCorrection,
+  addCharacterNote,
+  getSessionMemoryState
 } from '../services/geminiService';
+import { SessionMemoryPanel } from './SessionMemoryPanel';
 
 interface ContextPanelProps {
   scene: Scene;
@@ -93,6 +98,10 @@ const ContextPanel: React.FC<ContextPanelProps> = ({ scene, allScenes, boneyard,
   const [isChatting, setIsChatting] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
+  // Session Memory Panel State
+  const [showMemoryPanel, setShowMemoryPanel] = useState(false);
+  const [memoryState, setMemoryState] = useState(getSessionMemoryState());
+
   const handleAnalyze = async () => {
     setIsAnalyzing(true);
     const result = await analyzeSceneGap(scene, allScenes, config);
@@ -104,6 +113,20 @@ const ContextPanel: React.FC<ContextPanelProps> = ({ scene, allScenes, boneyard,
     if (!chatInput.trim()) return;
     const userMsg = chatInput;
     setChatInput('');
+
+    // Auto-detect corrections in user message
+    const correctionDetected = detectAndStoreCorrection(userMsg);
+
+    // Check for character-specific corrections
+    const charCorrection = detectCharacterCorrection(userMsg);
+    if (charCorrection) {
+      addCharacterNote(charCorrection.character, charCorrection.note);
+    }
+
+    // Update memory state if corrections were detected
+    if (correctionDetected || charCorrection) {
+      setMemoryState(getSessionMemoryState());
+    }
 
     const newHistory = [...chatHistory, { role: 'user', parts: [{ text: userMsg }] }];
     setChatHistory(newHistory);
@@ -294,6 +317,20 @@ const ContextPanel: React.FC<ContextPanelProps> = ({ scene, allScenes, boneyard,
         {/* DOCTOR TAB */}
         {activeTab === Tab.DOCTOR && (
           <div className="flex flex-col h-full">
+            {/* Memory Panel Toggle */}
+            <div className="flex justify-between items-center mb-3 pb-2 border-b border-zinc-800">
+              <div className="text-xs text-zinc-500">
+                {memoryState.correctionCount > 0 && (
+                  <span className="text-blue-400">{memoryState.correctionCount} corrections learned</span>
+                )}
+              </div>
+              <button
+                onClick={() => setShowMemoryPanel(true)}
+                className="px-2 py-1 text-[10px] bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-zinc-200 rounded uppercase tracking-wide transition"
+              >
+                Memory Settings
+              </button>
+            </div>
             <div className="flex-1 overflow-y-auto space-y-4 mb-4 min-h-[300px] p-1">
               {chatHistory.length === 0 && (
                 <div className="text-center text-zinc-500 text-sm mt-10 px-4">
@@ -335,6 +372,18 @@ const ContextPanel: React.FC<ContextPanelProps> = ({ scene, allScenes, boneyard,
           </div>
         )}
       </div>
+
+      {/* Session Memory Panel Modal */}
+      <SessionMemoryPanel
+        isOpen={showMemoryPanel}
+        onClose={() => {
+          setShowMemoryPanel(false);
+          setMemoryState(getSessionMemoryState()); // Refresh state after changes
+        }}
+        characterNames={allScenes.flatMap(s =>
+          s.beats.map(b => b.description.match(/^([A-Z][A-Z\s]+):/)?.[1]).filter(Boolean) as string[]
+        ).filter((v, i, a) => a.indexOf(v) === i)}
+      />
     </div>
   );
 };

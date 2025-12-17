@@ -153,6 +153,151 @@ export const getSessionMemoryState = (): {
   };
 };
 
+// =============================================================================
+// AUTOMATIC CORRECTION DETECTION
+// =============================================================================
+
+/**
+ * Patterns that indicate user is making a correction or expressing a preference
+ */
+const CORRECTION_PATTERNS = [
+  { pattern: /actually,?\s*(.+)/i, type: 'general' as const },
+  { pattern: /no,?\s*(?:that's wrong|incorrect|not quite),?\s*(.+)/i, type: 'general' as const },
+  { pattern: /don't\s+(?:use|write|include|say)\s+(.+)/i, type: 'dialogue_style' as const },
+  { pattern: /never\s+(?:use|write|include|have)\s+(.+)/i, type: 'general' as const },
+  { pattern: /(?:this character|he|she)\s+wouldn't\s+(?:say|do)\s+(.+)/i, type: 'character_voice' as const },
+  { pattern: /(?:keep it|make it)\s+(?:more\s+)?(\w+)/i, type: 'tone' as const },
+  { pattern: /too\s+(long|short|wordy|verbose|slow|fast)/i, type: 'pacing' as const },
+  { pattern: /prefer\s+(.+)/i, type: 'general' as const },
+  { pattern: /(?:should be|needs to be)\s+(?:more\s+)?(\w+)/i, type: 'tone' as const },
+  { pattern: /avoid\s+(.+)/i, type: 'general' as const },
+];
+
+/**
+ * Automatically detect and store corrections from user messages
+ * Returns true if a correction was detected
+ */
+export const detectAndStoreCorrection = (userMessage: string): boolean => {
+  const message = userMessage.trim();
+
+  for (const { pattern, type } of CORRECTION_PATTERNS) {
+    const match = message.match(pattern);
+    if (match) {
+      // Extract the correction content
+      const correction = match[1] || message;
+      addSessionCorrection(type, correction, message);
+
+      // Also check if it's an avoid pattern
+      if (message.toLowerCase().includes('don\'t') ||
+          message.toLowerCase().includes('never') ||
+          message.toLowerCase().includes('avoid')) {
+        addAvoidPattern(correction);
+      }
+
+      return true;
+    }
+  }
+
+  return false;
+};
+
+/**
+ * Extract character name from a correction about character behavior
+ */
+export const detectCharacterCorrection = (userMessage: string): { character: string; note: string } | null => {
+  // Pattern: "[Character] wouldn't..." or "[Character] would never..."
+  const patterns = [
+    /(\b[A-Z][a-z]+\b)\s+wouldn't\s+(.+)/,
+    /(\b[A-Z][a-z]+\b)\s+would\s+never\s+(.+)/,
+    /(\b[A-Z][a-z]+\b)\s+always\s+(.+)/,
+    /(\b[A-Z][a-z]+\b)\s+never\s+(.+)/,
+  ];
+
+  for (const pattern of patterns) {
+    const match = userMessage.match(pattern);
+    if (match) {
+      return {
+        character: match[1].toUpperCase(),
+        note: userMessage
+      };
+    }
+  }
+
+  return null;
+};
+
+// =============================================================================
+// DYNAMIC THINKING BUDGET
+// =============================================================================
+
+/**
+ * Calculate optimal thinking budget based on task complexity
+ */
+const calculateThinkingBudget = (
+  taskType: 'analysis' | 'dialogue' | 'chat' | 'alternatives' | 'continuity',
+  contextLength: number,
+  complexity: 'low' | 'medium' | 'high' = 'medium'
+): number => {
+  // Base budgets by task type
+  const baseBudgets = {
+    analysis: 2048,
+    dialogue: 1536,
+    chat: 3072,
+    alternatives: 1024,
+    continuity: 2048
+  };
+
+  let budget = baseBudgets[taskType];
+
+  // Adjust for context length (more context = more thinking needed)
+  if (contextLength > 5000) {
+    budget = Math.min(budget * 1.5, 8192);
+  } else if (contextLength > 10000) {
+    budget = Math.min(budget * 2, 8192);
+  }
+
+  // Adjust for complexity
+  if (complexity === 'high') {
+    budget = Math.min(budget * 1.5, 8192);
+  } else if (complexity === 'low') {
+    budget = Math.max(budget * 0.75, 512);
+  }
+
+  return Math.round(budget);
+};
+
+/**
+ * Estimate task complexity based on various factors
+ */
+const estimateComplexity = (
+  scene: Scene,
+  allScenes: Scene[],
+  hasConnections: boolean
+): 'low' | 'medium' | 'high' => {
+  let score = 0;
+
+  // More beats = more complex
+  if (scene.beats.length > 5) score += 2;
+  else if (scene.beats.length > 3) score += 1;
+
+  // Longer script content = more complex
+  if ((scene.scriptContent?.length || 0) > 2000) score += 2;
+  else if ((scene.scriptContent?.length || 0) > 1000) score += 1;
+
+  // Connections add complexity
+  if (hasConnections) score += 1;
+  if ((scene.connections?.length || 0) > 3) score += 1;
+
+  // Position in story matters (midpoint and climax are more complex)
+  const position = allScenes.findIndex(s => s.id === scene.id) / allScenes.length;
+  if (position > 0.4 && position < 0.6) score += 1; // Midpoint
+  if (position > 0.85) score += 1; // Climax
+
+  if (score >= 5) return 'high';
+  if (score >= 2) return 'medium';
+  return 'low';
+};
+
 /**
  * Check if AI is available (API key is set)
  */
@@ -665,12 +810,16 @@ ${SCENE_ANALYSIS_EXAMPLE}
 Use the same structure as the example above. Be specific to THIS scene's content.
   `.trim();
 
+  // Calculate dynamic thinking budget
+  const complexity = estimateComplexity(scene, allScenes, (scene.connections?.length || 0) > 0);
+  const thinkingBudget = calculateThinkingBudget('analysis', prompt.length, complexity);
+
   try {
     const response = await getAI().models.generateContent({
       model: MODEL,
       contents: prompt,
       config: {
-        thinkingConfig: { thinkingBudget: 2048 },
+        thinkingConfig: { thinkingBudget },
       }
     });
     return response.text || "No analysis generated.";
@@ -887,44 +1036,124 @@ Each alternative MUST:
 };
 
 // =============================================================================
-// CONTINUITY CHECK
+// CONTINUITY CHECK (Enhanced with tiered context)
 // =============================================================================
+
+/**
+ * Few-shot example for continuity checking
+ */
+const CONTINUITY_CHECK_EXAMPLE = `
+### Example Continuity Report
+
+**SCENE**: "The Escape" - INT. WAREHOUSE - NIGHT
+
+#### 🔴 CRITICAL ISSUES
+1. **Props Continuity**: Sarah is holding a flashlight in this scene (line 12), but she dropped it in the previous scene (Scene 14, line 45) and never retrieved it.
+   - **FIX**: Either add a line where she picks up a new flashlight, or change the light source.
+
+2. **Character Knowledge**: Marcus references "the map" (line 23), but he wasn't present when the map was discovered in Scene 8.
+   - **FIX**: Add a scene where Sarah shows him the map, or have Sarah reference it instead.
+
+#### ⚠️ WARNINGS
+1. **Timeline Gap**: 4 hours pass between Scene 14 (sunset) and this scene (night), but the characters appear to have made a 6-hour journey.
+   - **SUGGESTION**: Either compress the travel time or add a brief transitional moment.
+
+2. **Location Logic**: Characters enter through the "north door" but earlier established the warehouse only has east/west entrances.
+
+#### 💡 SUGGESTIONS
+1. **Missing Setup**: The rope Sarah uses (line 34) would be more satisfying if we saw it earlier. Consider adding it to Scene 12's props.
+
+2. **Payoff Opportunity**: The recurring "broken watch" motif from Act 1 could be referenced here for thematic resonance.
+
+#### ✅ CONTINUITY VERIFIED
+- Costume continuity: Characters wearing same clothes as previous scene ✓
+- Injury tracking: Marcus's limp (established Scene 6) correctly shown ✓
+- Dialogue callbacks: "Trust me" echoes Scene 3 promise ✓
+`;
 
 export const checkContinuity = async (
   scene: Scene,
   allScenes: Scene[],
   config: ProjectConfig
 ): Promise<string> => {
-  const storyContext = buildGlobalContext(allScenes);
+  // Use tiered context for comprehensive continuity checking
+  const tieredContext = buildTieredContext(scene, allScenes, config);
+
+  // Build detailed connection map
+  const incomingConnections = allScenes.filter(s =>
+    s.connections?.some(c => c.targetSceneId === scene.id)
+  );
+  const connectionMap = `
+=== INCOMING CONNECTIONS (Scenes that reference this one) ===
+${incomingConnections.length > 0
+    ? incomingConnections.map(s => {
+        const conn = s.connections?.find(c => c.targetSceneId === scene.id);
+        return `- [${conn?.type.toUpperCase()}] from "${s.title}": ${conn?.description}`;
+      }).join('\n')
+    : 'None'
+}
+
+=== OUTGOING CONNECTIONS (This scene references) ===
+${scene.connections?.map(c => {
+    const target = allScenes.find(s => s.id === c.targetSceneId);
+    return `- [${c.type.toUpperCase()}] to "${target?.title || c.targetSceneId}": ${c.description}`;
+  }).join('\n') || 'None defined'}
+`;
+
+  // Extract character appearances for tracking
+  const charactersInScene = config.characters
+    .filter(c => scene.scriptContent?.toUpperCase().includes(c.name.toUpperCase()))
+    .map(c => c.name);
 
   const prompt = `
 Role: Script Supervisor / Continuity Expert for "${config.title}".
+You have an eagle eye for plot holes, timeline issues, and prop/location inconsistencies.
 
-FULL SCRIPT OUTLINE:
-${storyContext}
+${tieredContext}
 
-SCENE TO CHECK: ${scene.id} - ${scene.title}
-SCENE CONTENT:
+${connectionMap}
+
+=== SCENE TO CHECK ===
+Title: ${scene.title}
+Location: ${scene.location || 'Not specified'}
+Time: ${scene.timeOfDay || 'Not specified'}
+
+Characters Present: ${charactersInScene.join(', ') || 'Unable to detect'}
+
+Tracking Notes: ${scene.tracking?.map(t => `[${t.category}] ${t.description}`).join('\n') || 'None'}
+
+=== SCRIPT CONTENT ===
 ${scene.scriptContent}
 
-CONNECTIONS DEFINED:
-${scene.connections?.map(c => `- ${c.type.toUpperCase()}: Links to ${c.targetSceneId} - ${c.description}`).join('\n') || 'None defined'}
+=== CONTINUITY CHECKLIST ===
+Analyze for:
+1. **Props Continuity**: Are all objects properly tracked? Nothing appears/disappears without explanation?
+2. **Character Knowledge**: Do characters only know things they've been shown learning?
+3. **Location Logic**: Does movement between locations make sense?
+4. **Timeline Consistency**: Does time flow logically from previous scenes?
+5. **Costume/Appearance**: Any unexplained changes?
+6. **Injury/State Tracking**: Are character conditions (injuries, emotions) consistent?
+7. **Setup/Payoff Integrity**: Are established connections paid off correctly?
+8. **Dialogue Continuity**: Do characters reference past events accurately?
 
-TASK:
-1. Check for logical continuity errors (props, locations, character knowledge)
-2. Verify causal chains are intact
-3. Flag any timeline inconsistencies
-4. Suggest any missing setup/payoff connections
+=== EXAMPLE OUTPUT (Follow this format) ===
+${CONTINUITY_CHECK_EXAMPLE}
 
-Format as Markdown with severity levels (Critical/Warning/Suggestion).
+=== NOW CHECK THIS SCENE ===
+Provide a thorough continuity report using the same format as the example.
+Use severity markers: 🔴 CRITICAL, ⚠️ WARNING, 💡 SUGGESTION, ✅ VERIFIED
   `.trim();
+
+  // Calculate dynamic thinking budget for this complex task
+  const complexity = estimateComplexity(scene, allScenes, true);
+  const thinkingBudget = calculateThinkingBudget('continuity', prompt.length, complexity);
 
   try {
     const response = await getAI().models.generateContent({
       model: MODEL,
       contents: prompt,
       config: {
-        thinkingConfig: { thinkingBudget: 2048 },
+        thinkingConfig: { thinkingBudget },
       }
     });
     return response.text || "No continuity analysis generated.";
