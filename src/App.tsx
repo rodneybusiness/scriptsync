@@ -172,6 +172,7 @@ const App: React.FC<AppProps> = ({ onBackToProjects }) => {
           onOpenExport={() => setIsExportOpen(true)}
           onBackToProjects={onBackToProjects}
           onResetLayout={viewMode === 'script' ? resetLayout : undefined}
+          hasRewriteData={hasRewriteData}
         />
 
         {/* Main Content Area */}
