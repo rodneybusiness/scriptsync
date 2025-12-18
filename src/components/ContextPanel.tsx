@@ -12,7 +12,9 @@ import {
   detectAndStoreCorrection,
   detectCharacterCorrection,
   addCharacterNote,
-  getSessionMemoryState
+  getSessionMemoryState,
+  generateDialogue,
+  checkContinuity
 } from '../services/geminiService';
 import { SessionMemoryPanel } from './SessionMemoryPanel';
 
@@ -137,6 +139,16 @@ const ContextPanel: React.FC<ContextPanelProps> = ({ scene, allScenes, boneyard,
   const [showMemoryPanel, setShowMemoryPanel] = useState(false);
   const [memoryState, setMemoryState] = useState(getSessionMemoryState());
 
+  // Dialogue Generation State
+  const [dialogueCharacter, setDialogueCharacter] = useState('');
+  const [dialogueIntent, setDialogueIntent] = useState('');
+  const [isGeneratingDialogue, setIsGeneratingDialogue] = useState(false);
+  const [generatedDialogue, setGeneratedDialogue] = useState<string | null>(null);
+
+  // Continuity Check State
+  const [isCheckingContinuity, setIsCheckingContinuity] = useState(false);
+  const [continuityResult, setContinuityResult] = useState<string | null>(null);
+
   const handleAnalyze = async () => {
     setIsAnalyzing(true);
     const result = await analyzeSceneGap(scene, allScenes, config);
@@ -201,6 +213,35 @@ const ContextPanel: React.FC<ContextPanelProps> = ({ scene, allScenes, boneyard,
       });
       setGeneratedAlt(null);
     }
+  };
+
+  const handleGenerateDialogue = async () => {
+    if (!dialogueCharacter.trim() || !dialogueIntent.trim()) return;
+    setIsGeneratingDialogue(true);
+    const result = await generateDialogue(scene, dialogueCharacter, dialogueIntent, allScenes, config);
+    setGeneratedDialogue(result);
+    setIsGeneratingDialogue(false);
+  };
+
+  const saveGeneratedDialogue = () => {
+    if (generatedDialogue) {
+      addToBoneyard({
+        id: Date.now().toString(),
+        content: `Dialogue for ${dialogueCharacter}: ${generatedDialogue}`,
+        type: 'ai-generated',
+        date: new Date()
+      });
+      setGeneratedDialogue(null);
+      setDialogueCharacter('');
+      setDialogueIntent('');
+    }
+  };
+
+  const handleCheckContinuity = async () => {
+    setIsCheckingContinuity(true);
+    const result = await checkContinuity(scene, allScenes, config);
+    setContinuityResult(result);
+    setIsCheckingContinuity(false);
   };
 
   useEffect(() => {
@@ -361,6 +402,27 @@ const ContextPanel: React.FC<ContextPanelProps> = ({ scene, allScenes, boneyard,
                 <p className="text-sm text-zinc-300 border-l-2 border-zinc-700 pl-3 py-1 group-hover:border-blue-500 transition">{item.description}</p>
               </div>
             ))}
+
+            {/* AI Continuity Check */}
+            <div className="mt-6 pt-4 border-t border-zinc-800">
+              <div className="bg-gradient-to-b from-amber-900/10 to-transparent p-3 rounded border border-amber-900/30">
+                <h4 className="text-xs font-bold text-amber-400 uppercase mb-2">AI Continuity Check</h4>
+                <p className="text-xs text-zinc-500 mb-3">Check this scene for timeline issues, logic errors, and missing setup/payoff.</p>
+                <button
+                  onClick={handleCheckContinuity}
+                  disabled={isCheckingContinuity}
+                  className="w-full py-2 bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold rounded shadow-lg shadow-amber-900/20 transition disabled:opacity-50"
+                >
+                  {isCheckingContinuity ? "Checking..." : "Check Continuity"}
+                </button>
+
+                {continuityResult && (
+                  <div className="mt-3 p-3 bg-zinc-900 rounded border border-zinc-700 max-h-64 overflow-y-auto">
+                    <MarkdownRenderer content={continuityResult} />
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         )}
 
@@ -395,6 +457,42 @@ const ContextPanel: React.FC<ContextPanelProps> = ({ scene, allScenes, boneyard,
                 <div className="mt-3 p-3 bg-zinc-900 rounded border border-zinc-700">
                   <MarkdownRenderer content={generatedAlt} />
                   <button onClick={saveGeneratedAlt} className="w-full mt-3 py-1 bg-zinc-800 hover:bg-zinc-700 text-[10px] uppercase font-bold text-green-400 rounded">
+                    Keep in Boneyard
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* AI Dialogue Generator */}
+            <div className="bg-gradient-to-b from-emerald-900/10 to-transparent p-3 rounded border border-emerald-900/30">
+              <h4 className="text-xs font-bold text-emerald-400 uppercase mb-2">AI Dialogue Generator</h4>
+              <p className="text-xs text-zinc-500 mb-3">Generate 3 dialogue options: direct, subtextual, and thematic.</p>
+              <input
+                type="text"
+                value={dialogueCharacter}
+                onChange={(e) => setDialogueCharacter(e.target.value)}
+                className="w-full bg-zinc-900 border border-zinc-800 rounded px-2 py-1.5 text-sm text-zinc-300 mb-2 focus:border-emerald-500 outline-none"
+                placeholder="Character name..."
+              />
+              <input
+                type="text"
+                value={dialogueIntent}
+                onChange={(e) => setDialogueIntent(e.target.value)}
+                className="w-full bg-zinc-900 border border-zinc-800 rounded px-2 py-1.5 text-sm text-zinc-300 mb-2 focus:border-emerald-500 outline-none"
+                placeholder="What they need to convey..."
+              />
+              <button
+                onClick={handleGenerateDialogue}
+                disabled={isGeneratingDialogue || !dialogueCharacter.trim() || !dialogueIntent.trim()}
+                className="w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded shadow-lg shadow-emerald-900/20 transition disabled:opacity-50"
+              >
+                {isGeneratingDialogue ? "Writing..." : "Generate Dialogue"}
+              </button>
+
+              {generatedDialogue && (
+                <div className="mt-3 p-3 bg-zinc-900 rounded border border-zinc-700 max-h-48 overflow-y-auto">
+                  <MarkdownRenderer content={generatedDialogue} />
+                  <button onClick={saveGeneratedDialogue} className="w-full mt-3 py-1 bg-zinc-800 hover:bg-zinc-700 text-[10px] uppercase font-bold text-green-400 rounded">
                     Keep in Boneyard
                   </button>
                 </div>
