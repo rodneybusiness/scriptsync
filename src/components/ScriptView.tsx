@@ -7,6 +7,7 @@ import { useProject } from '../config/ProjectContext';
 import { Scene, LintIssue } from '../config/types';
 import { parseFountainToReact, calculatePacingScore, getPacingColor, lintScript } from '../services/scriptUtils';
 import { stopSpeaking } from '../services/ttsService';
+import SuggestionsPanel, { SuggestionsIndicator } from './SuggestionsPanel';
 
 interface ScriptViewProps {
   scene: Scene;
@@ -197,6 +198,11 @@ const ScriptView: React.FC<ScriptViewProps> = ({ scene, allScenes, onUpdateScrip
                     <div className={`w-2 h-2 rounded-full ${pacingColor}`}></div>
                     <span className="text-[10px] font-bold text-zinc-400 uppercase">{pacingScore}/100 Pacing</span>
                   </div>
+
+                  {/* AI Agent Status */}
+                  <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-zinc-900 border border-zinc-800">
+                    <SuggestionsIndicator sceneId={scene.id} />
+                  </div>
                 </div>
                 <h1 className="text-3xl font-bold text-white mb-2 font-script tracking-tight">{scene.title.toUpperCase()}</h1>
 
@@ -306,6 +312,9 @@ const ScriptView: React.FC<ScriptViewProps> = ({ scene, allScenes, onUpdateScrip
           </div>
         </div>
       </div>
+
+      {/* AI Suggestions Panel */}
+      <SuggestionsPanel sceneId={scene.id} />
     </div>
   );
 };
