@@ -7,7 +7,7 @@ import { useProject } from '../config/ProjectContext';
 import { Scene, LintIssue } from '../config/types';
 import { parseFountainToReact, calculatePacingScore, getPacingColor, lintScript } from '../services/scriptUtils';
 import { stopSpeaking } from '../services/ttsService';
-import SuggestionsPanel, { SuggestionsIndicator } from './SuggestionsPanel';
+import { SuggestionsIndicator } from './SuggestionsPanel';
 
 interface ScriptViewProps {
   scene: Scene;
@@ -312,9 +312,6 @@ const ScriptView: React.FC<ScriptViewProps> = ({ scene, allScenes, onUpdateScrip
           </div>
         </div>
       </div>
-
-      {/* AI Suggestions Panel */}
-      <SuggestionsPanel sceneId={scene.id} />
     </div>
   );
 };
