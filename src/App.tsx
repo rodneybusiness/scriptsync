@@ -9,6 +9,9 @@ import { useProject } from './config/ProjectContext';
 import Navigation from './components/Navigation';
 import ScriptView from './components/ScriptView';
 import ContextPanel from './components/ContextPanel';
+import ResizeHandle from './components/ResizeHandle';
+import ColumnWrapper from './components/ColumnWrapper';
+import { useColumnLayout, ColumnId } from './hooks/useColumnLayout';
 import { Scene, BoneyardItem } from './config/types';
 import { scheduleAutoSave } from './services/storage';
 import { ErrorBoundary, AIErrorBoundary } from './components/ErrorBoundary';
@@ -42,6 +45,21 @@ const App: React.FC<AppProps> = ({ onBackToProjects }) => {
   const [boneyard, setBoneyard] = useState<BoneyardItem[]>([]);
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [isProjectOverviewOpen, setIsProjectOverviewOpen] = useState(false);
+
+  // Column layout management
+  const {
+    columnOrder,
+    draggedColumn,
+    dragOverColumn,
+    resizingColumn,
+    startResize,
+    startDrag,
+    handleDragOver,
+    handleDrop,
+    endDrag,
+    resetLayout,
+    getColumnStyle,
+  } = useColumnLayout();
 
   // Sync currentScene when sequences update
   useEffect(() => {
@@ -96,13 +114,49 @@ const App: React.FC<AppProps> = ({ onBackToProjects }) => {
     if (viewMode !== 'script') setViewMode('script');
   };
 
+  // Render column content based on columnId
+  const renderColumnContent = (columnId: ColumnId) => {
+    switch (columnId) {
+      case 'navigation':
+        return (
+          <Navigation
+            currentSceneId={currentScene.id}
+            onSelectScene={handleNavigate}
+          />
+        );
+      case 'script':
+        return (
+          <ErrorBoundary level="component">
+            <ScriptView
+              scene={currentScene}
+              allScenes={allScenes}
+              onUpdateScript={(newContent) => handleUpdateScript(currentScene.id, newContent)}
+              onSelectScene={handleNavigate}
+            />
+          </ErrorBoundary>
+        );
+      case 'context':
+        return (
+          <AIErrorBoundary fallbackMessage="AI features temporarily unavailable. Script editing still works.">
+            <ContextPanel
+              scene={currentScene}
+              allScenes={allScenes}
+              boneyard={boneyard}
+              addToBoneyard={addToBoneyard}
+            />
+          </AIErrorBoundary>
+        );
+    }
+  };
+
+  const columnTitles: Record<ColumnId, string> = {
+    navigation: 'Navigation',
+    script: 'Script',
+    context: 'Context',
+  };
+
   return (
     <div className="flex h-screen bg-zinc-950 text-zinc-200 font-sans">
-      <Navigation
-        currentSceneId={currentScene.id}
-        onSelectScene={handleNavigate}
-      />
-
       <main className="flex-1 flex flex-col relative overflow-hidden">
         {/* Top Status Bar */}
         <div className="h-14 border-b border-zinc-800 flex items-center justify-between px-6 bg-zinc-900 z-10 shadow-sm shrink-0">
@@ -192,6 +246,20 @@ const App: React.FC<AppProps> = ({ onBackToProjects }) => {
               <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div>
               <span className="text-xs text-zinc-400">Claude Active</span>
             </div>
+            {viewMode === 'script' && (
+              <>
+                <div className="w-px h-4 bg-zinc-800"></div>
+                <button
+                  onClick={resetLayout}
+                  className="text-xs text-zinc-600 hover:text-zinc-400 transition"
+                  title="Reset column layout to default"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                </button>
+              </>
+            )}
           </div>
         </div>
 
@@ -199,22 +267,31 @@ const App: React.FC<AppProps> = ({ onBackToProjects }) => {
         <div className="flex-1 flex overflow-hidden relative">
           {viewMode === 'script' && (
             <>
-              <ErrorBoundary level="component">
-                <ScriptView
-                  scene={currentScene}
-                  allScenes={allScenes}
-                  onUpdateScript={(newContent) => handleUpdateScript(currentScene.id, newContent)}
-                  onSelectScene={handleNavigate}
-                />
-              </ErrorBoundary>
-              <AIErrorBoundary fallbackMessage="AI features temporarily unavailable. Script editing still works.">
-                <ContextPanel
-                  scene={currentScene}
-                  allScenes={allScenes}
-                  boneyard={boneyard}
-                  addToBoneyard={addToBoneyard}
-                />
-              </AIErrorBoundary>
+              {columnOrder.map((columnId, index) => (
+                <React.Fragment key={columnId}>
+                  <ColumnWrapper
+                    columnId={columnId}
+                    title={columnTitles[columnId]}
+                    style={getColumnStyle(columnId)}
+                    isDragging={draggedColumn === columnId}
+                    isDragOver={dragOverColumn === columnId}
+                    onDragStart={() => startDrag(columnId)}
+                    onDragOver={() => handleDragOver(columnId)}
+                    onDrop={() => handleDrop(columnId)}
+                    onDragEnd={endDrag}
+                  >
+                    {renderColumnContent(columnId)}
+                  </ColumnWrapper>
+
+                  {/* Resize handle between columns (not after the last one) */}
+                  {index < columnOrder.length - 1 && (
+                    <ResizeHandle
+                      onMouseDown={(e) => startResize(columnId, e.clientX)}
+                      isResizing={resizingColumn === columnId}
+                    />
+                  )}
+                </React.Fragment>
+              ))}
             </>
           )}
 
