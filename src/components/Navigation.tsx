@@ -4,7 +4,7 @@
  * Uses project context for sequences - no hard-coded data.
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useProject } from '../config/ProjectContext';
 import { Scene } from '../config/types';
 import { calculatePacingScore, getPacingColor } from '../services/scriptUtils';
@@ -17,6 +17,41 @@ interface NavigationProps {
 const Navigation: React.FC<NavigationProps> = ({ currentSceneId, onSelectScene }) => {
   const { config, sequences } = useProject();
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Resizable sidebar state
+  const [sidebarWidth, setSidebarWidth] = useState(288); // 18rem default (w-72)
+  const [isResizing, setIsResizing] = useState(false);
+
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizing(true);
+  }, []);
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isResizing) return;
+      const newWidth = e.clientX;
+      setSidebarWidth(Math.max(200, Math.min(500, newWidth))); // Min 200px, max 500px
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+    };
+
+    if (isResizing) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+  }, [isResizing]);
 
   // Filter Logic
   const filteredData = sequences.map(seq => ({
@@ -34,7 +69,15 @@ const Navigation: React.FC<NavigationProps> = ({ currentSceneId, onSelectScene }
   })).filter(seq => seq.scenes.length > 0);
 
   return (
-    <div className="w-full bg-transparent flex flex-col h-full font-sans">
+    <div
+      style={{ width: sidebarWidth }}
+      className="bg-zinc-950 border-r border-zinc-800 flex flex-col h-full font-sans relative shrink-0"
+    >
+      {/* Resize Handle */}
+      <div
+        onMouseDown={handleMouseDown}
+        className={`absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-500/50 transition-colors z-20 ${isResizing ? 'bg-blue-500' : 'bg-transparent'}`}
+      />
       <div className="p-4 border-b border-zinc-800">
         <h1 className="text-lg font-bold text-zinc-100 tracking-tight">ScriptSync</h1>
         <p className="text-xs text-zinc-500 uppercase tracking-wider mt-1">{config.title}</p>
