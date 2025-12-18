@@ -30,7 +30,7 @@ interface ContextPanelProps {
 enum Tab {
   BEATS = 'Beats',
   NOTES = 'Notes',
-  TRACKING = 'Tracking',
+  CONTINUITY = 'Continuity',
   BONEYARD = 'Boneyard',
   DOCTOR = 'Dr. Claude'
 }
@@ -396,8 +396,8 @@ const ContextPanel: React.FC<ContextPanelProps> = ({ scene, allScenes, boneyard,
           </div>
         )}
 
-        {/* TRACKING TAB */}
-        {activeTab === Tab.TRACKING && (
+        {/* CONTINUITY TAB */}
+        {activeTab === Tab.CONTINUITY && (
           <div className="space-y-4">
             {/* Project Themes Section */}
             {config.themes && config.themes.length > 0 && (

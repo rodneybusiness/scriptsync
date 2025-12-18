@@ -63,7 +63,7 @@ const AppStatusBar: React.FC<AppStatusBarProps> = ({
                   : 'text-zinc-500 hover:text-zinc-300'
               }`}
             >
-              {mode === 'characters' ? 'Arcs' : mode === 'board' ? 'Board' : mode === 'tracker' ? 'Tracker' : mode.charAt(0).toUpperCase() + mode.slice(1)}
+              {mode === 'characters' ? 'Arcs' : mode === 'board' ? 'Board' : mode === 'tracker' ? 'Rewrite' : mode.charAt(0).toUpperCase() + mode.slice(1)}
             </button>
           ))}
         </div>
