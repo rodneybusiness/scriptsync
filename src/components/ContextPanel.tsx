@@ -30,11 +30,12 @@ interface ContextPanelProps {
 enum Tab {
   BEATS = 'Beats',
   NOTES = 'Notes',
-  PASSES = 'Passes',
-  CONTINUITY = 'Track',
-  BONEYARD = 'Cuts',
-  DOCTOR = 'AI'
+  DOCTOR = 'AI',
+  MORE = 'More'
 }
+
+// Sub-sections within More tab
+type MoreSection = 'track' | 'cuts' | 'dialogue' | 'ideas';
 
 // Simple Markdown Renderer Component
 const MarkdownRenderer: React.FC<{ content: string; className?: string }> = ({ content, className = '' }) => {
@@ -105,6 +106,7 @@ const ContextPanel: React.FC<ContextPanelProps> = ({ scene, allScenes, boneyard,
   const [suggestionsExpanded, setSuggestionsExpanded] = useState(true);
 
   const [activeTab, setActiveTab] = useState<Tab>(Tab.BEATS);
+  const [moreSection, setMoreSection] = useState<MoreSection>('track');
   const [analysis, setAnalysis] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -377,15 +379,16 @@ const ContextPanel: React.FC<ContextPanelProps> = ({ scene, allScenes, boneyard,
           </div>
         )}
 
-        {/* NOTES TAB - Scene notes + Studio feedback combined */}
+        {/* NOTES TAB - Scene notes + External Feedback + Rewrite Passes integrated */}
         {activeTab === Tab.NOTES && (
-          <div className="space-y-3">
-            <h3 className="text-sm font-bold text-zinc-100 mb-2">Notes</h3>
-
-            {/* Scene Notes Section */}
+          <div className="space-y-4">
+            {/* Scene Notes */}
             {scene.notes.length > 0 && (
               <div className="space-y-2">
-                <p className="text-[10px] text-zinc-500 uppercase tracking-wide">Scene Notes</p>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-wide">Scene Notes</h3>
+                  <span className="text-[10px] text-zinc-600">({scene.notes.length})</span>
+                </div>
                 {scene.notes.map((note) => (
                   <div key={note.id} className={`p-3 rounded border ${getNoteColor(note.type)}`}>
                     <div className="flex justify-between items-center mb-1">
@@ -398,10 +401,13 @@ const ContextPanel: React.FC<ContextPanelProps> = ({ scene, allScenes, boneyard,
               </div>
             )}
 
-            {/* External Feedback Section */}
+            {/* External Feedback */}
             {(relevantPageNotes.amazon.length > 0 || relevantPageNotes.pointGrey.length > 0) && (
-              <div className="space-y-2 pt-3 border-t border-zinc-800">
-                <p className="text-[10px] text-zinc-500 uppercase tracking-wide">External Feedback (Page {scene.pageNumber || 'N/A'})</p>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-wide">Studio Feedback</h3>
+                  <span className="text-[10px] text-zinc-500 bg-zinc-800 px-1.5 py-0.5 rounded">p.{scene.pageNumber || '?'}</span>
+                </div>
                 {relevantPageNotes.amazon.map((item, idx) => (
                   <div key={`amazon-${idx}`} className="p-3 rounded border bg-orange-900/10 border-orange-800/30">
                     <div className="flex justify-between items-center mb-1">
@@ -423,211 +429,337 @@ const ContextPanel: React.FC<ContextPanelProps> = ({ scene, allScenes, boneyard,
               </div>
             )}
 
-            {/* Empty state */}
-            {scene.notes.length === 0 && relevantPageNotes.amazon.length === 0 && relevantPageNotes.pointGrey.length === 0 && (
-              <p className="text-xs text-zinc-600 italic p-3 bg-zinc-900/50 rounded border border-zinc-800">
-                No notes for this scene yet.
-              </p>
-            )}
-
-            {/* AI Analysis */}
-            <button
-              onClick={handleAnalyze}
-              disabled={isAnalyzing}
-              className="w-full mt-4 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded font-bold text-sm hover:opacity-90 disabled:opacity-50 transition shadow-lg"
-            >
-              {isAnalyzing ? "Analyzing..." : "Analyze Scene Gaps"}
-            </button>
-            {analysis && (
-              <div className="mt-4 p-4 bg-zinc-800/50 rounded border border-zinc-700">
-                <h4 className="text-xs font-bold text-zinc-400 uppercase mb-3 border-b border-zinc-700 pb-2">AI Analysis Results</h4>
-                <MarkdownRenderer content={analysis} />
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* PASSES TAB - Rewrite passes relevant to this scene/act */}
-        {activeTab === Tab.PASSES && (
-          <div className="space-y-3">
-            <h3 className="text-sm font-bold text-zinc-100 mb-2">Rewrite Passes</h3>
-            <p className="text-xs text-zinc-500 mb-3">
-              Passes affecting {scene.sequenceId ? `Sequence ${scene.sequenceId.replace('SEQ_', '')}` : 'this scene'}
-            </p>
-
-            {relevantGoals.length === 0 ? (
-              <p className="text-xs text-zinc-600 italic p-3 bg-zinc-900/50 rounded border border-zinc-800">
-                No rewrite passes affect this section.
-              </p>
-            ) : (
-              relevantGoals.map((goal) => (
-                <div
-                  key={goal.id}
-                  className="p-3 rounded-lg border bg-zinc-900/50 border-zinc-800 hover:border-zinc-700 transition"
-                >
-                  {/* Header: Status emoji + Priority badge */}
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-lg">{goal.status.split(' ')[0]}</span>
-                    <span className={`px-1.5 py-0.5 text-[10px] font-bold uppercase rounded border ${getPriorityStyle(goal.priority)}`}>
-                      {goal.priority}
-                    </span>
-                    {goal.passType && (
-                      <span className="px-1.5 py-0.5 text-[10px] text-zinc-400 bg-zinc-800 rounded">
-                        {goal.passType}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Goal title */}
-                  <p className="text-sm font-medium text-zinc-200 mb-2">{goal.goal}</p>
-
-                  {/* Next move - the actionable item */}
-                  <div className="p-2 bg-emerald-900/10 rounded border border-emerald-900/30 mb-2">
-                    <p className="text-[10px] text-emerald-400 uppercase tracking-wide mb-0.5">Next Move</p>
-                    <p className="text-xs text-zinc-300">{goal.concreteNextMove}</p>
-                  </div>
-
-                  {/* Acts affected + Sources */}
-                  <div className="flex flex-wrap gap-1 text-[10px]">
-                    <span className="text-zinc-500">Acts: {goal.actsAffected.join(', ')}</span>
-                    <span className="text-zinc-600">•</span>
-                    {goal.sources.slice(0, 2).map((source, i) => (
-                      <span key={i} className="px-1 py-0.5 bg-zinc-800 text-zinc-400 rounded">
-                        {source}
-                      </span>
-                    ))}
-                    {goal.sources.length > 2 && (
-                      <span className="text-zinc-600">+{goal.sources.length - 2}</span>
-                    )}
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        )}
-
-        {/* CONTINUITY TAB - Scene tracking and continuity checks */}
-        {activeTab === Tab.CONTINUITY && (
-          <div className="space-y-4">
-            <h3 className="text-sm font-bold text-zinc-100 mb-2">Scene Tracking</h3>
-            {scene.tracking.map((item, idx) => (
-              <div key={idx} className="group">
-                <h4 className="text-xs font-semibold text-zinc-500 uppercase mb-1 group-hover:text-zinc-300 transition">{item.category}</h4>
-                <p className="text-sm text-zinc-300 border-l-2 border-zinc-700 pl-3 py-1 group-hover:border-blue-500 transition">{item.description}</p>
-              </div>
-            ))}
-
-            {/* AI Continuity Check */}
-            <div className="mt-6 pt-4 border-t border-zinc-800">
-              <div className="bg-gradient-to-b from-amber-900/10 to-transparent p-3 rounded border border-amber-900/30">
-                <h4 className="text-xs font-bold text-amber-400 uppercase mb-2">AI Continuity Check</h4>
-                <p className="text-xs text-zinc-500 mb-3">Check this scene for timeline issues, logic errors, and missing setup/payoff.</p>
-                <button
-                  onClick={handleCheckContinuity}
-                  disabled={isCheckingContinuity}
-                  className="w-full py-2 bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold rounded shadow-lg shadow-amber-900/20 transition disabled:opacity-50"
-                >
-                  {isCheckingContinuity ? "Checking..." : "Check Continuity"}
-                </button>
-
-                {continuityResult && (
-                  <div className="mt-3 p-3 bg-zinc-900 rounded border border-zinc-700 max-h-64 overflow-y-auto">
-                    <MarkdownRenderer content={continuityResult} />
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* BONEYARD TAB */}
-        {activeTab === Tab.BONEYARD && (
-          <div className="space-y-4">
-            <div className="bg-zinc-950 p-3 rounded border border-zinc-800">
-              <h4 className="text-xs font-bold text-zinc-400 uppercase mb-2">Quick Save</h4>
-              <textarea
-                value={snippetInput}
-                onChange={(e) => setSnippetInput(e.target.value)}
-                className="w-full bg-zinc-900 border border-zinc-800 rounded p-2 text-sm text-zinc-300 mb-2 h-20 focus:border-blue-500 outline-none resize-none"
-                placeholder="Paste cut dialogue or idea here..."
-              />
-              <button onClick={handleSaveSnippet} className="w-full py-1 bg-zinc-800 hover:bg-zinc-700 text-xs uppercase font-bold text-zinc-400 rounded transition">
-                Save to Boneyard
-              </button>
-            </div>
-
-            <div className="bg-gradient-to-b from-blue-900/10 to-transparent p-3 rounded border border-blue-900/30">
-              <h4 className="text-xs font-bold text-blue-400 uppercase mb-2">AI Idea Generator</h4>
-              <p className="text-xs text-zinc-500 mb-3">Stuck? Generate 3 radically different versions of this beat.</p>
-              <button
-                onClick={handleGenerateAlt}
-                disabled={isGeneratingAlt}
-                className="w-full py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded shadow-lg shadow-blue-900/20 transition"
-              >
-                {isGeneratingAlt ? "Brainstorming..." : "Generate Alternatives"}
-              </button>
-
-              {generatedAlt && (
-                <div className="mt-3 p-3 bg-zinc-900 rounded border border-zinc-700">
-                  <MarkdownRenderer content={generatedAlt} />
-                  <button onClick={saveGeneratedAlt} className="w-full mt-3 py-1 bg-zinc-800 hover:bg-zinc-700 text-[10px] uppercase font-bold text-green-400 rounded">
-                    Keep in Boneyard
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* AI Dialogue Generator */}
-            <div className="bg-gradient-to-b from-emerald-900/10 to-transparent p-3 rounded border border-emerald-900/30">
-              <h4 className="text-xs font-bold text-emerald-400 uppercase mb-2">AI Dialogue Generator</h4>
-              <p className="text-xs text-zinc-500 mb-3">Generate 3 dialogue options: direct, subtextual, and thematic.</p>
-              <input
-                type="text"
-                value={dialogueCharacter}
-                onChange={(e) => setDialogueCharacter(e.target.value)}
-                className="w-full bg-zinc-900 border border-zinc-800 rounded px-2 py-1.5 text-sm text-zinc-300 mb-2 focus:border-emerald-500 outline-none"
-                placeholder="Character name..."
-              />
-              <input
-                type="text"
-                value={dialogueIntent}
-                onChange={(e) => setDialogueIntent(e.target.value)}
-                className="w-full bg-zinc-900 border border-zinc-800 rounded px-2 py-1.5 text-sm text-zinc-300 mb-2 focus:border-emerald-500 outline-none"
-                placeholder="What they need to convey..."
-              />
-              <button
-                onClick={handleGenerateDialogue}
-                disabled={isGeneratingDialogue || !dialogueCharacter.trim() || !dialogueIntent.trim()}
-                className="w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded shadow-lg shadow-emerald-900/20 transition disabled:opacity-50"
-              >
-                {isGeneratingDialogue ? "Writing..." : "Generate Dialogue"}
-              </button>
-
-              {generatedDialogue && (
-                <div className="mt-3 p-3 bg-zinc-900 rounded border border-zinc-700 max-h-48 overflow-y-auto">
-                  <MarkdownRenderer content={generatedDialogue} />
-                  <button onClick={saveGeneratedDialogue} className="w-full mt-3 py-1 bg-zinc-800 hover:bg-zinc-700 text-[10px] uppercase font-bold text-green-400 rounded">
-                    Keep in Boneyard
-                  </button>
-                </div>
-              )}
-            </div>
-
-            <div>
-              <h4 className="text-xs font-bold text-zinc-500 uppercase mb-2">Saved Items</h4>
+            {/* Rewrite Passes - THE BRILLIANT INTEGRATION */}
+            {relevantGoals.length > 0 && (
               <div className="space-y-2">
-                {boneyard.length === 0 && <p className="text-xs text-zinc-600 italic">Boneyard is empty.</p>}
-                {boneyard.map(item => (
-                  <div key={item.id} className="p-2 bg-zinc-800/50 rounded border border-zinc-800">
-                    <div className="flex justify-between items-center mb-1">
-                      <span className={`text-[10px] uppercase px-1 rounded ${item.type === 'ai-generated' ? 'bg-blue-900/30 text-blue-400' : 'bg-zinc-700 text-zinc-400'}`}>{item.type}</span>
-                      <span className="text-[10px] text-zinc-600">{item.date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                    </div>
-                    <p className="text-xs text-zinc-300 line-clamp-4 whitespace-pre-wrap">{item.content}</p>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-xs font-bold text-amber-400 uppercase tracking-wide">Active Passes</h3>
+                    <span className="text-[10px] text-zinc-600">({relevantGoals.length})</span>
                   </div>
-                ))}
+                  <span className="text-[9px] text-zinc-600">
+                    Seq {scene.sequenceId?.replace('SEQ_', '') || '?'}
+                  </span>
+                </div>
+
+                {/* Priority-sorted goals with visual hierarchy */}
+                {relevantGoals
+                  .sort((a, b) => {
+                    const priorityOrder = { 'CRITICAL': 0, 'HIGH': 1, 'MEDIUM': 2, 'LOW': 3 };
+                    return priorityOrder[a.priority] - priorityOrder[b.priority];
+                  })
+                  .map((goal) => (
+                    <div
+                      key={goal.id}
+                      className={`p-3 rounded-lg border transition-all ${
+                        goal.priority === 'CRITICAL'
+                          ? 'bg-red-950/30 border-red-800/50 hover:border-red-600/50'
+                          : goal.priority === 'HIGH'
+                            ? 'bg-orange-950/20 border-orange-800/40 hover:border-orange-600/50'
+                            : 'bg-zinc-900/50 border-zinc-800 hover:border-zinc-700'
+                      }`}
+                    >
+                      {/* Compact header */}
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-base">{goal.status.split(' ')[0]}</span>
+                        <span className={`px-1.5 py-0.5 text-[9px] font-bold uppercase rounded ${getPriorityStyle(goal.priority)}`}>
+                          {goal.priority}
+                        </span>
+                        {goal.passType && (
+                          <span className="px-1.5 py-0.5 text-[9px] text-zinc-500 bg-zinc-800/80 rounded">
+                            {goal.passType}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Goal - the what */}
+                      <p className="text-sm font-medium text-zinc-200 mb-2 leading-snug">{goal.goal}</p>
+
+                      {/* Next Move - the actionable part, highlighted */}
+                      <div className="p-2 bg-emerald-900/20 rounded border border-emerald-900/40">
+                        <div className="flex items-center gap-1 mb-1">
+                          <svg className="w-3 h-3 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                          </svg>
+                          <span className="text-[9px] text-emerald-400 uppercase font-bold tracking-wide">Next Move</span>
+                        </div>
+                        <p className="text-xs text-zinc-300 leading-relaxed">{goal.concreteNextMove}</p>
+                      </div>
+
+                      {/* Source tags */}
+                      {goal.sources.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          {goal.sources.slice(0, 3).map((source, i) => (
+                            <span key={i} className="px-1 py-0.5 text-[9px] bg-zinc-800/60 text-zinc-500 rounded">
+                              {source}
+                            </span>
+                          ))}
+                          {goal.sources.length > 3 && (
+                            <span className="text-[9px] text-zinc-600">+{goal.sources.length - 3}</span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ))}
               </div>
+            )}
+
+            {/* Empty state */}
+            {scene.notes.length === 0 && relevantPageNotes.amazon.length === 0 && relevantPageNotes.pointGrey.length === 0 && relevantGoals.length === 0 && (
+              <div className="text-center py-8 text-zinc-600">
+                <svg className="w-8 h-8 mx-auto mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <p className="text-xs italic">No notes or active passes for this scene</p>
+              </div>
+            )}
+
+            {/* Quick Analysis button */}
+            <div className="pt-3 border-t border-zinc-800">
+              <button
+                onClick={handleAnalyze}
+                disabled={isAnalyzing}
+                className="w-full py-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded text-xs font-medium transition flex items-center justify-center gap-2"
+              >
+                {isAnalyzing ? (
+                  <>
+                    <div className="w-3 h-3 border border-zinc-500 border-t-transparent rounded-full animate-spin" />
+                    Analyzing...
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                    </svg>
+                    Analyze Scene Gaps
+                  </>
+                )}
+              </button>
+              {analysis && (
+                <div className="mt-3 p-3 bg-zinc-900/80 rounded border border-zinc-700 max-h-48 overflow-y-auto">
+                  <MarkdownRenderer content={analysis} />
+                </div>
+              )}
             </div>
+          </div>
+        )}
+
+        {/* MORE TAB - Well-designed overflow for Track, Cuts, Dialogue, Ideas */}
+        {activeTab === Tab.MORE && (
+          <div className="space-y-4">
+            {/* Section Switcher - Clean pill design */}
+            <div className="flex gap-1 p-1 bg-zinc-900/80 rounded-lg border border-zinc-800">
+              {[
+                { key: 'track' as MoreSection, label: 'Track', icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2' },
+                { key: 'cuts' as MoreSection, label: 'Cuts', icon: 'M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16' },
+                { key: 'dialogue' as MoreSection, label: 'Dialogue', icon: 'M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z' },
+                { key: 'ideas' as MoreSection, label: 'Ideas', icon: 'M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z' },
+              ].map(({ key, label, icon }) => (
+                <button
+                  key={key}
+                  onClick={() => setMoreSection(key)}
+                  className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2 text-[10px] font-semibold uppercase tracking-wide rounded-md transition-all ${
+                    moreSection === key
+                      ? 'bg-zinc-800 text-zinc-100 shadow-sm'
+                      : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50'
+                  }`}
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d={icon} />
+                  </svg>
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            {/* TRACK Section - Scene tracking and continuity */}
+            {moreSection === 'track' && (
+              <div className="space-y-4">
+                {scene.tracking.length > 0 ? (
+                  <div className="space-y-3">
+                    {scene.tracking.map((item, idx) => (
+                      <div key={idx} className="group">
+                        <h4 className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wide mb-1 group-hover:text-zinc-300 transition">{item.category}</h4>
+                        <p className="text-sm text-zinc-300 border-l-2 border-zinc-700 pl-3 py-1 group-hover:border-blue-500 transition">{item.description}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-zinc-600 italic p-3 bg-zinc-900/50 rounded border border-zinc-800">
+                    No tracking items for this scene.
+                  </p>
+                )}
+
+                {/* AI Continuity Check */}
+                <div className="p-3 bg-amber-900/10 rounded-lg border border-amber-900/30">
+                  <div className="flex items-center gap-2 mb-2">
+                    <svg className="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <h4 className="text-xs font-bold text-amber-400 uppercase">Continuity Check</h4>
+                  </div>
+                  <p className="text-[10px] text-zinc-500 mb-3">Scan for timeline issues, logic errors, missing setup/payoff.</p>
+                  <button
+                    onClick={handleCheckContinuity}
+                    disabled={isCheckingContinuity}
+                    className="w-full py-2 bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold rounded transition disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {isCheckingContinuity ? (
+                      <><div className="w-3 h-3 border border-white/30 border-t-white rounded-full animate-spin" />Checking...</>
+                    ) : (
+                      'Check Continuity'
+                    )}
+                  </button>
+                  {continuityResult && (
+                    <div className="mt-3 p-3 bg-zinc-900 rounded border border-zinc-700 max-h-48 overflow-y-auto">
+                      <MarkdownRenderer content={continuityResult} />
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* CUTS Section - Boneyard */}
+            {moreSection === 'cuts' && (
+              <div className="space-y-4">
+                {/* Quick Save */}
+                <div className="p-3 bg-zinc-900/50 rounded-lg border border-zinc-800">
+                  <h4 className="text-xs font-bold text-zinc-400 uppercase mb-2">Save to Boneyard</h4>
+                  <textarea
+                    value={snippetInput}
+                    onChange={(e) => setSnippetInput(e.target.value)}
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-sm text-zinc-300 mb-2 h-20 focus:border-blue-500 outline-none resize-none"
+                    placeholder="Paste cut dialogue or ideas here..."
+                  />
+                  <button
+                    onClick={handleSaveSnippet}
+                    disabled={!snippetInput.trim()}
+                    className="w-full py-1.5 bg-zinc-800 hover:bg-zinc-700 text-xs font-medium text-zinc-300 rounded transition disabled:opacity-50"
+                  >
+                    Save Snippet
+                  </button>
+                </div>
+
+                {/* Saved Items */}
+                <div>
+                  <h4 className="text-xs font-bold text-zinc-500 uppercase mb-2">
+                    Saved Items {boneyard.length > 0 && <span className="text-zinc-600">({boneyard.length})</span>}
+                  </h4>
+                  {boneyard.length === 0 ? (
+                    <p className="text-xs text-zinc-600 italic p-3 bg-zinc-900/30 rounded border border-zinc-800">
+                      Boneyard is empty. Save cut dialogue and ideas here.
+                    </p>
+                  ) : (
+                    <div className="space-y-2 max-h-64 overflow-y-auto">
+                      {boneyard.map(item => (
+                        <div key={item.id} className="p-2 bg-zinc-800/50 rounded border border-zinc-800">
+                          <div className="flex justify-between items-center mb-1">
+                            <span className={`text-[9px] uppercase px-1.5 py-0.5 rounded ${item.type === 'ai-generated' ? 'bg-blue-900/30 text-blue-400' : 'bg-zinc-700 text-zinc-400'}`}>{item.type}</span>
+                            <span className="text-[9px] text-zinc-600">{item.date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                          </div>
+                          <p className="text-xs text-zinc-300 line-clamp-3 whitespace-pre-wrap">{item.content}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* DIALOGUE Section - AI Dialogue Generator */}
+            {moreSection === 'dialogue' && (
+              <div className="space-y-4">
+                <div className="p-4 bg-emerald-900/10 rounded-lg border border-emerald-900/30">
+                  <div className="flex items-center gap-2 mb-3">
+                    <svg className="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                    </svg>
+                    <h4 className="text-xs font-bold text-emerald-400 uppercase">Dialogue Generator</h4>
+                  </div>
+                  <p className="text-[10px] text-zinc-500 mb-4">Generate 3 options: direct, subtextual, and thematic.</p>
+
+                  <div className="space-y-2 mb-3">
+                    <input
+                      type="text"
+                      value={dialogueCharacter}
+                      onChange={(e) => setDialogueCharacter(e.target.value)}
+                      className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-sm text-zinc-300 focus:border-emerald-500 outline-none"
+                      placeholder="Character name..."
+                    />
+                    <input
+                      type="text"
+                      value={dialogueIntent}
+                      onChange={(e) => setDialogueIntent(e.target.value)}
+                      className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-sm text-zinc-300 focus:border-emerald-500 outline-none"
+                      placeholder="What they need to convey..."
+                    />
+                  </div>
+
+                  <button
+                    onClick={handleGenerateDialogue}
+                    disabled={isGeneratingDialogue || !dialogueCharacter.trim() || !dialogueIntent.trim()}
+                    className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded transition disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {isGeneratingDialogue ? (
+                      <><div className="w-3 h-3 border border-white/30 border-t-white rounded-full animate-spin" />Writing...</>
+                    ) : (
+                      'Generate Dialogue'
+                    )}
+                  </button>
+
+                  {generatedDialogue && (
+                    <div className="mt-4 p-3 bg-zinc-900 rounded border border-zinc-700 max-h-48 overflow-y-auto">
+                      <MarkdownRenderer content={generatedDialogue} />
+                      <button
+                        onClick={saveGeneratedDialogue}
+                        className="w-full mt-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-[10px] uppercase font-bold text-emerald-400 rounded transition"
+                      >
+                        Save to Boneyard
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* IDEAS Section - AI Idea Generator */}
+            {moreSection === 'ideas' && (
+              <div className="space-y-4">
+                <div className="p-4 bg-blue-900/10 rounded-lg border border-blue-900/30">
+                  <div className="flex items-center gap-2 mb-3">
+                    <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                    </svg>
+                    <h4 className="text-xs font-bold text-blue-400 uppercase">Idea Generator</h4>
+                  </div>
+                  <p className="text-[10px] text-zinc-500 mb-4">Stuck? Generate 3 radically different versions of this beat.</p>
+
+                  <button
+                    onClick={handleGenerateAlt}
+                    disabled={isGeneratingAlt}
+                    className="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded transition disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {isGeneratingAlt ? (
+                      <><div className="w-3 h-3 border border-white/30 border-t-white rounded-full animate-spin" />Brainstorming...</>
+                    ) : (
+                      'Generate Alternatives'
+                    )}
+                  </button>
+
+                  {generatedAlt && (
+                    <div className="mt-4 p-3 bg-zinc-900 rounded border border-zinc-700 max-h-64 overflow-y-auto">
+                      <MarkdownRenderer content={generatedAlt} />
+                      <button
+                        onClick={saveGeneratedAlt}
+                        className="w-full mt-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-[10px] uppercase font-bold text-blue-400 rounded transition"
+                      >
+                        Save to Boneyard
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         )}
 

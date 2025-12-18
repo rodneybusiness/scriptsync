@@ -125,7 +125,6 @@ const App: React.FC<AppProps> = ({ onBackToProjects }) => {
           <Navigation
             currentSceneId={currentScene.id}
             onSelectScene={handleNavigate}
-            onOpenProjectInfo={() => setIsProjectOverviewOpen(true)}
           />
         );
       case 'script':

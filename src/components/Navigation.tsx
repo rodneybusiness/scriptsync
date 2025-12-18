@@ -36,10 +36,9 @@ const getStatusStyle = (status?: SceneStatus): { bg: string; text: string; label
 interface NavigationProps {
   currentSceneId: string;
   onSelectScene: (scene: Scene) => void;
-  onOpenProjectInfo?: () => void;
 }
 
-const Navigation: React.FC<NavigationProps> = ({ currentSceneId, onSelectScene, onOpenProjectInfo }) => {
+const Navigation: React.FC<NavigationProps> = ({ currentSceneId, onSelectScene }) => {
   const { config, sequences } = useProject();
   const [searchQuery, setSearchQuery] = useState('');
   const [filterMode, setFilterMode] = useState<FilterMode>('all');
@@ -80,18 +79,6 @@ const Navigation: React.FC<NavigationProps> = ({ currentSceneId, onSelectScene, 
       className="w-full bg-transparent flex flex-col h-full font-sans"
     >
       <div className="p-4 border-b border-zinc-800">
-        <h1 className="text-lg font-bold text-zinc-100 tracking-tight">ScriptSync</h1>
-        <button
-          onClick={onOpenProjectInfo}
-          className="text-xs text-zinc-500 uppercase tracking-wider mt-1 mb-3 hover:text-blue-400 transition-colors text-left group flex items-center gap-1"
-          title="View project info"
-        >
-          {config.title}
-          <svg className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-        </button>
-
         {/* Search Bar */}
         <div className="relative">
           <input

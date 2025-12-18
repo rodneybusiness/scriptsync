@@ -47,9 +47,16 @@ const AppStatusBar: React.FC<AppStatusBarProps> = ({
     <div className="h-12 border-b border-zinc-800 flex items-center justify-between px-4 bg-zinc-900/80 backdrop-blur-sm z-10 shrink-0">
       {/* Left: Project + View Mode */}
       <div className="flex items-center gap-4">
-        <span className="text-sm font-semibold text-zinc-100 truncate max-w-[200px]">
+        <button
+          onClick={onOpenInfo}
+          className="text-sm font-semibold text-zinc-100 truncate max-w-[200px] hover:text-blue-400 transition-colors flex items-center gap-1.5 group"
+          title="View project info"
+        >
           {projectTitle}
-        </span>
+          <svg className="w-3.5 h-3.5 text-zinc-500 group-hover:text-blue-400 opacity-0 group-hover:opacity-100 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </button>
 
         {/* Compact View Switcher */}
         <div className="flex bg-zinc-950/80 rounded-lg p-0.5 border border-zinc-800/50">
