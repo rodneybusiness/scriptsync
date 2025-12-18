@@ -36,9 +36,20 @@ const ScriptView: React.FC<ScriptViewProps> = ({ scene, allScenes, onUpdateScrip
   const [editContent, setEditContent] = useState(scene.scriptContent);
   const [activeVariant, setActiveVariant] = useState('A');
 
+  // Text size (persisted) - scales from 0.8 to 1.4
+  const [textScale, setTextScale] = useState(() => {
+    const saved = localStorage.getItem('scriptsync-text-scale');
+    return saved ? parseFloat(saved) : 1;
+  });
+
   // Features
   const [paradoxWarning, setParadoxWarning] = useState<string | null>(null);
   const [lintIssues, setLintIssues] = useState<LintIssue[]>([]);
+
+  // Save text scale preference
+  useEffect(() => {
+    localStorage.setItem('scriptsync-text-scale', textScale.toString());
+  }, [textScale]);
 
   // --- EFFECTS ---
 
@@ -87,7 +98,24 @@ const ScriptView: React.FC<ScriptViewProps> = ({ scene, allScenes, onUpdateScrip
 
   // Keyboard navigation handler
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
-    // Only handle when not editing
+    // Text size adjustment (works in any mode) - Cmd/Ctrl + Plus/Minus
+    if ((e.metaKey || e.ctrlKey) && (e.key === '=' || e.key === '+')) {
+      e.preventDefault();
+      setTextScale(prev => Math.min(1.4, prev + 0.1));
+      return;
+    }
+    if ((e.metaKey || e.ctrlKey) && e.key === '-') {
+      e.preventDefault();
+      setTextScale(prev => Math.max(0.8, prev - 0.1));
+      return;
+    }
+    if ((e.metaKey || e.ctrlKey) && e.key === '0') {
+      e.preventDefault();
+      setTextScale(1);
+      return;
+    }
+
+    // Only handle scene navigation when not editing
     if (isEditing) return;
 
     // Shift + Down Arrow = Next Scene
@@ -180,8 +208,8 @@ const ScriptView: React.FC<ScriptViewProps> = ({ scene, allScenes, onUpdateScrip
           })}
         </div>
 
-        {/* CENTER: Script Page */}
-        <div className="flex-1 py-12 px-12 lg:px-24 max-w-5xl mx-auto relative">
+        {/* CENTER: Script Page - Full width with responsive padding */}
+        <div className="flex-1 py-8 px-6 md:px-10 lg:px-16 relative">
 
           {/* Logline Context Banner */}
           {config.logline && showLogline && (
@@ -277,7 +305,7 @@ const ScriptView: React.FC<ScriptViewProps> = ({ scene, allScenes, onUpdateScrip
             </div>
           )}
 
-          {/* Script Content - Dark theme, full panel, responsive */}
+          {/* Script Content - Dark theme, full panel, responsive with text scaling */}
           <div className="flex-1 relative">
             {isEditing ? (
               <div className="relative h-full border border-zinc-700/50 rounded-lg bg-zinc-900/30">
@@ -287,7 +315,7 @@ const ScriptView: React.FC<ScriptViewProps> = ({ scene, allScenes, onUpdateScrip
                     <div
                       key={issue.id}
                       className="absolute right-0 w-1.5 h-1.5 rounded-full bg-amber-500/70 cursor-help group"
-                      style={{ top: `${(issue.line * 1.6) + 0.5}rem` }}
+                      style={{ top: `${(issue.line * 1.6 * textScale) + 0.5}rem` }}
                     >
                       <div className="absolute left-4 top-0 w-48 bg-zinc-800 text-xs p-2 rounded border border-zinc-700 shadow-xl opacity-0 group-hover:opacity-100 pointer-events-none z-50">
                         <span className="text-amber-400 block mb-1">{issue.type}</span>
@@ -300,7 +328,8 @@ const ScriptView: React.FC<ScriptViewProps> = ({ scene, allScenes, onUpdateScrip
                 <textarea
                   value={editContent}
                   onChange={(e) => setEditContent(e.target.value)}
-                  className="w-full h-full min-h-[600px] bg-transparent text-zinc-200 font-script text-[13px] leading-relaxed border-none focus:ring-0 resize-none outline-none p-8 pl-10"
+                  className="w-full h-full min-h-[600px] bg-transparent text-zinc-200 font-script leading-relaxed border-none focus:ring-0 resize-none outline-none p-8 pl-10"
+                  style={{ fontSize: `${13 * textScale}px` }}
                   spellCheck={false}
                   autoFocus
                 />
@@ -308,8 +337,11 @@ const ScriptView: React.FC<ScriptViewProps> = ({ scene, allScenes, onUpdateScrip
             ) : (
               /* Dark theme screenplay page with subtle border */
               <div className="h-full border border-zinc-800 rounded-lg bg-zinc-900/50 overflow-y-auto">
-                {/* Page content with screenplay margins */}
-                <div className="px-8 md:px-12 lg:px-16 py-10">
+                {/* Page content with screenplay margins - text scale applied */}
+                <div
+                  className="px-6 md:px-10 lg:px-16 py-8"
+                  style={{ fontSize: `${textScale}em` }}
+                >
                   {editContent.split('\n').map((line, i) => {
                     const { content, classes } = parseFountainToReact(line, i);
                     return (
@@ -324,9 +356,10 @@ const ScriptView: React.FC<ScriptViewProps> = ({ scene, allScenes, onUpdateScrip
           </div>
 
           {/* Keyboard shortcuts hint */}
-          <div className="mt-4 text-[10px] text-zinc-600 flex gap-4">
-            <span><kbd className="px-1 py-0.5 bg-zinc-800 rounded text-zinc-400">Shift</kbd> + <kbd className="px-1 py-0.5 bg-zinc-800 rounded text-zinc-400">↑↓</kbd> Navigate scenes</span>
+          <div className="mt-4 text-[10px] text-zinc-600 flex flex-wrap gap-x-4 gap-y-1">
+            <span><kbd className="px-1 py-0.5 bg-zinc-800 rounded text-zinc-400">Shift</kbd> + <kbd className="px-1 py-0.5 bg-zinc-800 rounded text-zinc-400">↑↓</kbd> Navigate</span>
             <span><kbd className="px-1 py-0.5 bg-zinc-800 rounded text-zinc-400">e</kbd> Edit</span>
+            <span><kbd className="px-1 py-0.5 bg-zinc-800 rounded text-zinc-400">⌘</kbd><kbd className="px-1 py-0.5 bg-zinc-800 rounded text-zinc-400">+/-</kbd> Text size</span>
           </div>
         </div>
       </div>
