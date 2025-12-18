@@ -1,7 +1,7 @@
 # ScriptSync Project Creation Enhancement - Execution Plan
 
 > Generated: December 18, 2025
-> **Updated: December 18, 2025** - Complete overhaul + UX polish + Timeline redesign
+> **Updated: December 18, 2025** - Complete overhaul + UX polish + Timeline redesign + ContextPanel consolidation
 > Status: Planning Complete - Ready for Implementation
 > Branch: `claude/align-project-creation-ui-0US27`
 
@@ -35,11 +35,27 @@ type SceneStatus = 'draft' | 'review' | 'polished' | 'locked';
 ```
 Scenes now have optional `status` field for workflow tracking.
 
-### ContextPanel Tab Restructuring
-- **Renamed:** "Goals" → "Passes" (industry terminology for rewrite work items)
-- **Removed:** Standalone "Feedback" tab
-- **Merged:** Studio feedback into Notes tab with source labels (`[AMAZON]`, `[POINT GREY]`)
-- **Simplified:** "Track" tab (removed themes/constraints clutter)
+### ContextPanel Tab Consolidation (Major Restructure)
+**Old structure (6 tabs):** Beats | Notes | Passes | Track | Cuts | AI
+
+**New structure (4 tabs):** Beats | Notes | AI | More
+
+- **Beats tab:** Unchanged - scene beats with completion indicators
+- **Notes tab:** Now integrates THREE sources:
+  - Scene notes (original)
+  - Studio feedback with source labels (Amazon, Point Grey)
+  - **Active Passes** - Rewrite goals relevant to this scene/sequence
+    - Priority-sorted (Critical → High → Medium → Low)
+    - Color-coded borders for visual hierarchy
+    - "Next Move" prominently displayed with arrow icon
+- **AI tab:** Script Doctor chat (unchanged)
+- **More tab:** Elegant overflow with pill-style sub-navigation
+  - **Track:** Scene tracking items + AI Continuity Check
+  - **Cuts:** Boneyard for saving cut dialogue/ideas
+  - **Dialogue:** AI Dialogue Generator (3 variations: direct, subtextual, thematic)
+  - **Ideas:** AI Idea Generator (alternative beats)
+
+**Philosophy:** Writers use Beats/Notes/AI 90% of the time. Track/Cuts/Dialogue/Ideas are "power tools" - available but not cluttering primary navigation.
 
 ### Character Analysis Overhauled
 New `src/services/characterAnalysis.ts` replaces academic metrics with writer-useful data:
@@ -74,7 +90,8 @@ This is the standard template for 90% of screenplays. Multi-timeline view can be
 
 ### ProjectOverview Accessibility Improved
 - **Problem:** ProjectOverview was hidden behind 2 clicks (menu → "Project Info")
-- **Solution:** Project title in Navigation sidebar is now clickable
+- **Solution:** Project title in top status bar is now clickable (with hover info icon)
+- **Also:** Removed duplicate project title from Navigation sidebar (was showing twice)
 - **Result:** One-click access to theme, characters, stats, AI settings
 - **UX Pattern:** "Click on what you want to know about" - natural discovery
 
@@ -633,10 +650,11 @@ src/
 │   ├── QuickStart.tsx        (NEW - Phase 1)
 │   ├── ProjectSettings.tsx   (NEW - Phase 1)
 │   ├── CloneTemplate.tsx     (NEW - Phase 3)
-│   ├── ContextPanel.tsx      (MODIFIED - "Passes" tab)
+│   ├── ContextPanel.tsx      (MODIFIED - 4 tabs: Beats, Notes+Passes, AI, More)
 │   ├── CharacterDashboard.tsx (MODIFIED - new analysis)
-│   ├── Navigation.tsx        (MODIFIED - badges, filters, settings icon)
-│   └── ProjectOverview.tsx   (MODIFIED - theme display)
+│   ├── Navigation.tsx        (MODIFIED - badges, filters, removed duplicate title)
+│   ├── AppStatusBar.tsx      (MODIFIED - clickable project title for ProjectOverview)
+│   └── ProjectOverview.tsx   (MODIFIED - theme display, stats in header)
 ├── services/
 │   ├── geminiService.ts      (modify - add enrichment endpoints)
 │   ├── characterAnalysis.ts  (NEW - writer-focused metrics)
@@ -664,7 +682,7 @@ docs/
 | `src/index.tsx` | 345 | App entry, ProjectSelector, mode management |
 | `src/components/ImportWizard.tsx` | 634 | Existing script import flow |
 | `src/components/Navigation.tsx` | ~280 | Sidebar with badges, filters, stats |
-| `src/components/ContextPanel.tsx` | ~900 | "Passes" tab, merged feedback |
+| `src/components/ContextPanel.tsx` | ~780 | 4 tabs: Beats, Notes (with Passes), AI, More |
 | `src/components/CharacterDashboard.tsx` | ~455 | Writer-focused character metrics |
 | `src/services/geminiService.ts` | ~400 | Claude API integration |
 | `src/services/characterAnalysis.ts` | ~280 | Speaking partners, verbal tics, arcs |
@@ -681,11 +699,26 @@ When importing or loading projects with the old `themes: string[]` format:
 2. In Project Settings, offer "Convert to Theme Statement" button
 3. Both formats work - no forced migration
 
-### Tab Name Changes
+### Tab Structure Changes
 
-If any code references old tab names:
-- "Goals" → "Passes"
-- "Feedback" → Merged into "Notes"
+**Old 6-tab structure → New 4-tab structure:**
+- "Beats" → "Beats" (unchanged)
+- "Notes" → "Notes" (now includes Passes integration)
+- "Passes" → Integrated into "Notes" tab
+- "Track" → Moved to "More" → "Track" sub-section
+- "Cuts" → Moved to "More" → "Cuts" sub-section
+- "AI" → "AI" (unchanged)
+- NEW: "More" tab with Track, Cuts, Dialogue, Ideas
+
+If any code references old tab names, update to new enum:
+```typescript
+enum Tab {
+  BEATS = 'Beats',
+  NOTES = 'Notes',
+  DOCTOR = 'AI',
+  MORE = 'More'
+}
+```
 
 ### Character Metrics
 
