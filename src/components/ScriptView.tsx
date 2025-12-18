@@ -2,7 +2,8 @@
  * ScriptView - Main script editing and viewing component
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useProject } from '../config/ProjectContext';
 import { Scene, LintIssue } from '../config/types';
 import { parseFountainToReact, calculatePacingScore, getPacingColor, lintScript } from '../services/scriptUtils';
 import { stopSpeaking } from '../services/ttsService';
@@ -15,6 +16,14 @@ interface ScriptViewProps {
 }
 
 const ScriptView: React.FC<ScriptViewProps> = ({ scene, allScenes, onUpdateScript, onSelectScene }) => {
+  const { sequences } = useProject();
+
+  // Get current sequence for context
+  const currentSequence = useMemo(() =>
+    sequences.find(seq => seq.id === scene.sequenceId),
+    [sequences, scene.sequenceId]
+  );
+
   // --- STATE ---
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(scene.scriptContent);
@@ -166,6 +175,20 @@ const ScriptView: React.FC<ScriptViewProps> = ({ scene, allScenes, onUpdateScrip
                   </div>
                 </div>
                 <h1 className="text-3xl font-bold text-white mb-2 font-script tracking-tight">{scene.title.toUpperCase()}</h1>
+
+                {/* Scene & Sequence Context */}
+                <div className="space-y-1">
+                  {scene.summary && (
+                    <p className="text-sm text-zinc-400 leading-relaxed max-w-2xl">
+                      {scene.summary}
+                    </p>
+                  )}
+                  {currentSequence?.dramaticQuestion && (
+                    <p className="text-xs text-blue-400/70 italic">
+                      Sequence: {currentSequence.dramaticQuestion}
+                    </p>
+                  )}
+                </div>
               </div>
 
               <div className="flex gap-2">
