@@ -2,7 +2,7 @@
  * ContextPanel - Side panel for beats, notes, tracking, and AI chat
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useProject } from '../config/ProjectContext';
 import { Scene, NoteType, BoneyardItem } from '../config/types';
 import {
@@ -92,6 +92,42 @@ const ContextPanel: React.FC<ContextPanelProps> = ({ scene, allScenes, boneyard,
   const [activeTab, setActiveTab] = useState<Tab>(Tab.BEATS);
   const [analysis, setAnalysis] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+  // Resizable panel state
+  const [panelWidth, setPanelWidth] = useState(384); // 24rem default (w-96)
+  const [isResizing, setIsResizing] = useState(false);
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizing(true);
+  }, []);
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isResizing) return;
+      const newWidth = window.innerWidth - e.clientX;
+      setPanelWidth(Math.max(280, Math.min(800, newWidth))); // Min 280px, max 800px
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+    };
+
+    if (isResizing) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+  }, [isResizing]);
 
   // Get page notes relevant to current scene
   const relevantPageNotes = React.useMemo(() => {
@@ -194,7 +230,17 @@ const ContextPanel: React.FC<ContextPanelProps> = ({ scene, allScenes, boneyard,
   };
 
   return (
-    <div className="w-96 bg-zinc-900 border-l border-zinc-800 flex flex-col h-full">
+    <div
+      ref={panelRef}
+      style={{ width: panelWidth }}
+      className="bg-zinc-900 border-l border-zinc-800 flex flex-col h-full relative shrink-0"
+    >
+      {/* Resize Handle */}
+      <div
+        onMouseDown={handleMouseDown}
+        className={`absolute left-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-500/50 transition-colors z-20 ${isResizing ? 'bg-blue-500' : 'bg-transparent'}`}
+      />
+
       {/* Tabs */}
       <div className="flex border-b border-zinc-800 overflow-x-auto scrollbar-hide shrink-0">
         {Object.values(Tab).map((tab) => (
