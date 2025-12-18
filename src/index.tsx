@@ -180,6 +180,17 @@ const Root: React.FC = () => {
       if (activeId) {
         const data = loadStoredProject(activeId);
         if (data) {
+          // Try to merge bundled rewriteData if the stored project doesn't have it
+          if (!data.rewriteData) {
+            try {
+              const bundled = await loadBundledProject(activeId);
+              if (bundled.rewriteData) {
+                data.rewriteData = bundled.rewriteData;
+              }
+            } catch {
+              // Bundled project not found, continue without rewriteData
+            }
+          }
           setProjectData(data);
           setMode('project');
           return;
@@ -209,9 +220,20 @@ const Root: React.FC = () => {
   }, []);
 
   // Handle project selection
-  const handleSelectProject = (id: string) => {
+  const handleSelectProject = async (id: string) => {
     const data = loadStoredProject(id);
     if (data) {
+      // Try to merge bundled rewriteData if the stored project doesn't have it
+      if (!data.rewriteData) {
+        try {
+          const bundled = await loadBundledProject(id);
+          if (bundled.rewriteData) {
+            data.rewriteData = bundled.rewriteData;
+          }
+        } catch {
+          // Bundled project not found, continue without rewriteData
+        }
+      }
       setProjectData(data);
       setActiveProject(id);
       setMode('project');
