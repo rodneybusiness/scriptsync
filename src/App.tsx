@@ -12,6 +12,7 @@ import ContextPanel from './components/ContextPanel';
 import ResizeHandle from './components/ResizeHandle';
 import ColumnWrapper from './components/ColumnWrapper';
 import { useColumnLayout, ColumnId } from './hooks/useColumnLayout';
+import { AIAgentsProvider } from './contexts/AIAgentsContext';
 import { Scene, BoneyardItem } from './config/types';
 import { scheduleAutoSave } from './services/storage';
 import { ErrorBoundary, AIErrorBoundary } from './components/ErrorBoundary';
@@ -156,8 +157,9 @@ const App: React.FC<AppProps> = ({ onBackToProjects }) => {
   };
 
   return (
-    <div className="flex h-screen bg-zinc-950 text-zinc-200 font-sans">
-      <main className="flex-1 flex flex-col relative overflow-hidden">
+    <AIAgentsProvider currentScene={currentScene} allScenes={allScenes}>
+      <div className="flex h-screen bg-zinc-950 text-zinc-200 font-sans">
+        <main className="flex-1 flex flex-col relative overflow-hidden">
         {/* Top Status Bar */}
         <div className="h-14 border-b border-zinc-800 flex items-center justify-between px-6 bg-zinc-900 z-10 shadow-sm shrink-0">
           <div className="flex items-center gap-6">
@@ -351,8 +353,9 @@ const App: React.FC<AppProps> = ({ onBackToProjects }) => {
             <ProjectOverview isOpen={isProjectOverviewOpen} onClose={() => setIsProjectOverviewOpen(false)} />
           </Suspense>
         )}
-      </main>
-    </div>
+        </main>
+      </div>
+    </AIAgentsProvider>
   );
 };
 
