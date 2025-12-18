@@ -1,5 +1,11 @@
 /**
- * TimelineView - Visual timeline for tracking scene connections
+ * TimelineView - Story Structure Visualization
+ *
+ * Designed for standard linear screenplays (90% of projects).
+ * Shows: Act structure, sequence density, character presence, scene flow.
+ *
+ * For multi-timeline stories (like Bell Bottoms), this can be extended
+ * with a toggle, but the default is single-timeline structural view.
  */
 
 import React, { useMemo } from 'react';
@@ -11,145 +17,295 @@ interface TimelineViewProps {
   scriptData: Sequence[];
 }
 
+/** Estimate pages from script content */
+const estimatePages = (content: string): number => {
+  const words = content.split(/\s+/).filter(Boolean).length;
+  return Math.max(0.5, Math.round((words / 250) * 2) / 2);
+};
+
+/** Map sequences to acts (simple heuristic: first 2 = Act 1, middle = Act 2, last 2 = Act 3) */
+const getActForSequence = (seqIndex: number, totalSequences: number): 1 | 2 | 3 => {
+  if (totalSequences <= 3) {
+    return (seqIndex + 1) as 1 | 2 | 3;
+  }
+  const proportion = seqIndex / totalSequences;
+  if (proportion < 0.25) return 1;
+  if (proportion < 0.75) return 2;
+  return 3;
+};
+
 const TimelineView: React.FC<TimelineViewProps> = ({ onSelectScene, scriptData }) => {
   const { config } = useProject();
 
-  const flattenedScenes = useMemo(() => scriptData.flatMap(seq => seq.scenes), [scriptData]);
+  // Flatten scenes with sequence info
+  const scenesWithMeta = useMemo(() => {
+    return scriptData.flatMap((seq, seqIdx) =>
+      seq.scenes.map(scene => ({
+        ...scene,
+        sequenceTitle: seq.title,
+        sequenceIndex: seqIdx,
+        act: getActForSequence(seqIdx, scriptData.length),
+        pages: estimatePages(scene.scriptContent)
+      }))
+    );
+  }, [scriptData]);
 
-  // Generic timeline detection - looks for patterns in titles/summaries
-  // Projects can customize this by adding timeline metadata to scenes
-  const getTimelineInfo = (scene: Scene) => {
-    const title = scene.title.toLowerCase();
-    const summary = scene.summary.toLowerCase();
-
-    // Look for year patterns or "past"/"present"/"future" keywords
-    const pastPatterns = ['past', 'flashback', 'earlier', '197', '198', '195', '196'];
-    const futurePatterns = ['future', '202', '203', 'present day', 'current'];
-
-    const isPast = pastPatterns.some(p => title.includes(p) || summary.includes(p));
-    const isFuture = futurePatterns.some(p => title.includes(p) || summary.includes(p));
-
-    // Default: first sequence = primary timeline, rest = secondary
-    if (!isPast && !isFuture) {
-      if (scene.sequenceId === scriptData[0]?.id) {
-        return { timeline: 'primary', label: 'Primary Timeline' };
-      }
-      return { timeline: 'secondary', label: 'Secondary Timeline' };
-    }
-
-    return isPast
-      ? { timeline: 'secondary', label: 'Past Timeline' }
-      : { timeline: 'primary', label: 'Primary Timeline' };
-  };
-
-  // Calculate connections for SVG
-  const renderConnections = () => {
-    return flattenedScenes.flatMap((sourceScene) => {
-      if (!sourceScene.connections) return [];
-
-      return sourceScene.connections.map((conn, connIdx) => {
-        const targetScene = flattenedScenes.find(s => s.id === conn.targetSceneId);
-        if (!targetScene) return null;
-
-        const sourceY = flattenedScenes.findIndex(s => s.id === sourceScene.id) * 140 + 80;
-        const targetY = flattenedScenes.findIndex(s => s.id === targetScene.id) * 140 + 80;
-
-        const sourceInfo = getTimelineInfo(sourceScene);
-        const targetInfo = getTimelineInfo(targetScene);
-
-        const isSourcePrimary = sourceInfo.timeline === 'primary';
-        const isTargetPrimary = targetInfo.timeline === 'primary';
-
-        const startX = isSourcePrimary ? 288 : 864;
-        const endX = isTargetPrimary ? 288 : 864;
-
-        const startXAdjusted = isSourcePrimary ? startX + 180 : startX - 180;
-        const endXAdjusted = isTargetPrimary ? endX + 180 : endX - 180;
-
-        const strokeColor = conn.type === 'causal' ? '#f87171' :
-          conn.type === 'echo' ? '#60a5fa' :
-          conn.type === 'foreshadow' ? '#34d399' :
-          '#a78bfa';
-
-        return (
-          <g key={`${sourceScene.id}-${conn.targetSceneId}-${connIdx}`}>
-            <path
-              d={`M ${startXAdjusted} ${sourceY} C ${startXAdjusted + (isSourcePrimary ? 50 : -50)} ${sourceY}, ${endXAdjusted + (isTargetPrimary ? 50 : -50)} ${targetY}, ${endXAdjusted} ${targetY}`}
-              fill="none"
-              stroke={strokeColor}
-              strokeWidth="2"
-              strokeDasharray="5,5"
-              className="opacity-40 hover:opacity-100 transition-opacity duration-300"
-            />
-            <circle cx={endXAdjusted} cy={targetY} r="3" fill={strokeColor} />
-          </g>
-        );
-      });
+  // Calculate act totals
+  const actStats = useMemo(() => {
+    const stats = { 1: { pages: 0, scenes: 0 }, 2: { pages: 0, scenes: 0 }, 3: { pages: 0, scenes: 0 } };
+    scenesWithMeta.forEach(s => {
+      stats[s.act].pages += s.pages;
+      stats[s.act].scenes += 1;
     });
+    return stats;
+  }, [scenesWithMeta]);
+
+  // Calculate character presence across scenes
+  const characterPresence = useMemo(() => {
+    const mainChars = config.characters.filter(c => c.role === 'main').slice(0, 5);
+
+    return mainChars.map(char => {
+      const searchTerms = [char.name.toUpperCase()];
+      if (char.aliases) {
+        searchTerms.push(...char.aliases.map(a => a.toUpperCase()));
+      }
+
+      const presence = scenesWithMeta.map(scene => {
+        const script = scene.scriptContent.toUpperCase();
+        return searchTerms.some(term => script.includes(term));
+      });
+
+      return { name: char.name, presence };
+    });
+  }, [config.characters, scenesWithMeta]);
+
+  // Group scenes by sequence for density view
+  const sequenceStats = useMemo(() => {
+    return scriptData.map((seq, idx) => ({
+      id: seq.id,
+      title: seq.title.split(':')[0] || seq.title,
+      sceneCount: seq.scenes.length,
+      pages: seq.scenes.reduce((sum, s) => sum + estimatePages(s.scriptContent), 0),
+      act: getActForSequence(idx, scriptData.length)
+    }));
+  }, [scriptData]);
+
+  const totalPages = useMemo(() =>
+    scenesWithMeta.reduce((sum, s) => sum + s.pages, 0),
+    [scenesWithMeta]
+  );
+
+  // Colors for acts
+  const actColors = {
+    1: { bg: 'bg-blue-900/20', border: 'border-blue-700/50', text: 'text-blue-400', bar: 'bg-blue-500' },
+    2: { bg: 'bg-amber-900/20', border: 'border-amber-700/50', text: 'text-amber-400', bar: 'bg-amber-500' },
+    3: { bg: 'bg-red-900/20', border: 'border-red-700/50', text: 'text-red-400', bar: 'bg-red-500' }
   };
 
   return (
-    <div className="flex-1 bg-zinc-950 overflow-y-auto p-8 min-h-screen relative">
-      <div className="max-w-6xl mx-auto relative">
-        <h1 className="text-2xl font-bold text-zinc-100 mb-2">Dynamic Timeline Visualization</h1>
-        <p className="text-zinc-400 mb-8">
-          Track continuity and ripple effects in <span className="text-blue-400">{config.title}</span>.
-          Dashed lines indicate scene connections.
-        </p>
+    <div className="flex-1 bg-zinc-950 overflow-y-auto p-6">
+      <div className="max-w-6xl mx-auto">
+        {/* Header */}
+        <div className="mb-6">
+          <h1 className="text-xl font-bold text-zinc-100 mb-1">Story Structure</h1>
+          <p className="text-sm text-zinc-500">
+            <span className="text-zinc-300">{config.title}</span> • ~{Math.round(totalPages)} pages • {scenesWithMeta.length} scenes
+          </p>
+        </div>
 
-        <div className="grid grid-cols-2 gap-12 relative z-10">
-          {/* Center Line */}
-          <div className="absolute left-1/2 top-0 bottom-0 w-px bg-zinc-800 transform -translate-x-1/2"></div>
-
-          {/* Columns Headers */}
-          <div className="text-center pb-4 border-b border-zinc-800">
-            <h2 className="text-blue-400 font-mono text-lg uppercase tracking-widest">Primary Timeline</h2>
-          </div>
-          <div className="text-center pb-4 border-b border-zinc-800">
-            <h2 className="text-amber-500 font-mono text-lg uppercase tracking-widest">Secondary Timeline</h2>
-          </div>
-
-          {/* SVG Overlay Layer */}
-          <svg className="absolute top-[100px] left-0 w-full h-[2000px] pointer-events-none z-0 overflow-visible">
-            {renderConnections()}
-          </svg>
-
-          {/* Content Mapping */}
-          <div className="col-span-2 space-y-0 mt-8">
-            {flattenedScenes.map((scene) => {
-              const { timeline } = getTimelineInfo(scene);
-              const isPrimary = timeline === 'primary';
-
+        {/* Act Overview Bar */}
+        <div className="mb-8">
+          <div className="flex gap-1 h-10 rounded-lg overflow-hidden border border-zinc-800">
+            {([1, 2, 3] as const).map(act => {
+              const width = totalPages > 0 ? (actStats[act].pages / totalPages) * 100 : 33;
               return (
-                <div key={scene.id} className={`flex items-center h-[140px] relative ${isPrimary ? 'justify-start' : 'justify-end'}`}>
-                  {/* Scene Card */}
-                  <div
-                    onClick={() => onSelectScene(scene)}
-                    className={`w-[45%] p-4 rounded border cursor-pointer transition hover:border-opacity-100 hover:bg-zinc-900 relative z-20 ${
-                      isPrimary
-                        ? 'border-blue-900/50 bg-blue-900/10 mr-auto text-right'
-                        : 'border-amber-900/50 bg-amber-900/10 ml-auto text-left'
-                    }`}
-                  >
-                    <div className={`flex items-center gap-2 mb-1 ${isPrimary ? 'justify-end' : 'justify-start'}`}>
-                      <span className="font-mono text-xs text-zinc-500">{scene.id}</span>
-                      <h4 className={`font-bold text-sm ${isPrimary ? 'text-blue-200' : 'text-amber-200'}`}>{scene.title}</h4>
-                    </div>
-                    <p className="text-xs text-zinc-400 line-clamp-2">{scene.summary}</p>
+                <div
+                  key={act}
+                  className={`${actColors[act].bg} flex items-center justify-center transition-all`}
+                  style={{ width: `${width}%` }}
+                >
+                  <span className={`text-xs font-bold ${actColors[act].text}`}>
+                    ACT {act}
+                  </span>
+                  <span className="text-[10px] text-zinc-500 ml-2">
+                    ~{Math.round(actStats[act].pages)}p
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+          <div className="flex justify-between mt-1 text-[10px] text-zinc-600">
+            <span>Setup</span>
+            <span>Confrontation</span>
+            <span>Resolution</span>
+          </div>
+        </div>
 
-                    {/* Tags */}
-                    <div className={`flex gap-1 mt-2 ${isPrimary ? 'justify-end' : 'justify-start'}`}>
-                      {scene.connections?.map((c, i) => (
-                        <span key={i} className="text-[9px] px-1 rounded bg-zinc-800 border border-zinc-700 text-zinc-400">
-                          {c.targetSceneId}
-                        </span>
-                      ))}
-                    </div>
+        {/* Sequence Blocks */}
+        <div className="mb-8">
+          <h2 className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-3">Sequences</h2>
+          <div className="flex gap-1">
+            {sequenceStats.map((seq, idx) => {
+              const widthPercent = totalPages > 0 ? (seq.pages / totalPages) * 100 : 10;
+              const colors = actColors[seq.act];
+              return (
+                <div
+                  key={seq.id}
+                  className={`${colors.bg} ${colors.border} border rounded p-2 flex flex-col justify-between min-w-[60px] transition-all hover:opacity-80`}
+                  style={{ width: `${Math.max(widthPercent, 5)}%` }}
+                  title={`${seq.title}: ${seq.sceneCount} scenes, ~${Math.round(seq.pages)} pages`}
+                >
+                  <div className="text-[9px] text-zinc-400 truncate">{seq.title}</div>
+                  <div className="text-[10px] text-zinc-500 mt-1">
+                    {seq.sceneCount}sc • {Math.round(seq.pages)}p
                   </div>
                 </div>
               );
             })}
           </div>
+        </div>
+
+        {/* Character Presence Swimlanes */}
+        {characterPresence.length > 0 && (
+          <div className="mb-8">
+            <h2 className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-3">Character Presence</h2>
+            <div className="space-y-2">
+              {characterPresence.map((char, charIdx) => (
+                <div key={char.name} className="flex items-center gap-3">
+                  <div className="w-20 text-xs text-zinc-400 truncate" title={char.name}>
+                    {char.name.split(' ')[0]}
+                  </div>
+                  <div className="flex-1 flex gap-px">
+                    {char.presence.map((present, sceneIdx) => (
+                      <div
+                        key={sceneIdx}
+                        className={`h-4 flex-1 rounded-sm transition-all ${
+                          present
+                            ? 'bg-emerald-500/60 hover:bg-emerald-500'
+                            : 'bg-zinc-800/50'
+                        }`}
+                        title={`${scenesWithMeta[sceneIdx]?.title || 'Scene'}: ${present ? 'Present' : 'Absent'}`}
+                      />
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Scene Cards Flow */}
+        <div className="mb-8">
+          <h2 className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-3">Scene Flow</h2>
+          <div className="relative">
+            {/* Connection lines layer */}
+            <svg className="absolute inset-0 w-full h-full pointer-events-none z-0 overflow-visible">
+              {scenesWithMeta.flatMap((scene, sceneIdx) => {
+                if (!scene.connections) return [];
+                return scene.connections.map((conn, connIdx) => {
+                  const targetIdx = scenesWithMeta.findIndex(s => s.id === conn.targetSceneId);
+                  if (targetIdx === -1) return null;
+
+                  // Calculate positions based on card layout
+                  const cardsPerRow = 8;
+                  const cardWidth = 100;
+                  const cardHeight = 90;
+                  const gap = 8;
+
+                  const sourceRow = Math.floor(sceneIdx / cardsPerRow);
+                  const sourceCol = sceneIdx % cardsPerRow;
+                  const targetRow = Math.floor(targetIdx / cardsPerRow);
+                  const targetCol = targetIdx % cardsPerRow;
+
+                  const startX = sourceCol * (cardWidth + gap) + cardWidth / 2;
+                  const startY = sourceRow * (cardHeight + gap) + cardHeight;
+                  const endX = targetCol * (cardWidth + gap) + cardWidth / 2;
+                  const endY = targetRow * (cardHeight + gap);
+
+                  const strokeColor = conn.type === 'causal' ? '#f87171' :
+                    conn.type === 'echo' ? '#60a5fa' :
+                    conn.type === 'foreshadow' ? '#34d399' :
+                    '#a78bfa';
+
+                  return (
+                    <g key={`${scene.id}-${conn.targetSceneId}-${connIdx}`}>
+                      <path
+                        d={`M ${startX} ${startY} Q ${startX} ${(startY + endY) / 2}, ${(startX + endX) / 2} ${(startY + endY) / 2} T ${endX} ${endY}`}
+                        fill="none"
+                        stroke={strokeColor}
+                        strokeWidth="1.5"
+                        strokeDasharray="4,4"
+                        className="opacity-30"
+                      />
+                      <circle cx={endX} cy={endY} r="3" fill={strokeColor} className="opacity-50" />
+                    </g>
+                  );
+                });
+              })}
+            </svg>
+
+            {/* Scene cards grid */}
+            <div className="grid grid-cols-8 gap-2 relative z-10">
+              {scenesWithMeta.map((scene, idx) => {
+                const colors = actColors[scene.act];
+                const hasConnections = scene.connections && scene.connections.length > 0;
+
+                return (
+                  <div
+                    key={scene.id}
+                    onClick={() => onSelectScene(scene)}
+                    className={`${colors.bg} ${colors.border} border rounded-lg p-2 cursor-pointer transition-all hover:scale-105 hover:z-20 hover:shadow-lg group relative`}
+                  >
+                    {/* Connection indicator */}
+                    {hasConnections && (
+                      <div className="absolute -top-1 -right-1 w-2 h-2 bg-purple-500 rounded-full" />
+                    )}
+
+                    <div className="text-[9px] font-mono text-zinc-500 mb-1">{scene.id}</div>
+                    <div className={`text-[10px] font-medium ${colors.text} line-clamp-2 leading-tight mb-1`}>
+                      {scene.title.split(':').pop()?.trim() || scene.title}
+                    </div>
+                    <div className="text-[9px] text-zinc-600">
+                      {Math.round(scene.pages * 10) / 10}p
+                    </div>
+
+                    {/* Hover tooltip */}
+                    <div className="absolute left-0 bottom-full mb-2 w-48 p-2 bg-zinc-800 border border-zinc-700 rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-30">
+                      <div className="text-xs text-zinc-200 font-medium mb-1">{scene.title}</div>
+                      <div className="text-[10px] text-zinc-400 line-clamp-3">{scene.summary}</div>
+                      {hasConnections && (
+                        <div className="mt-2 pt-2 border-t border-zinc-700">
+                          <div className="text-[9px] text-zinc-500">
+                            Connects to: {scene.connections?.map(c => c.targetSceneId).join(', ')}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* Legend */}
+        <div className="flex items-center gap-6 text-[10px] text-zinc-500 border-t border-zinc-800 pt-4">
+          <span className="flex items-center gap-1">
+            <div className="w-3 h-3 bg-blue-900/50 rounded" /> Act 1
+          </span>
+          <span className="flex items-center gap-1">
+            <div className="w-3 h-3 bg-amber-900/50 rounded" /> Act 2
+          </span>
+          <span className="flex items-center gap-1">
+            <div className="w-3 h-3 bg-red-900/50 rounded" /> Act 3
+          </span>
+          <span className="text-zinc-700">|</span>
+          <span className="flex items-center gap-1">
+            <div className="w-2 h-2 bg-purple-500 rounded-full" /> Has connections
+          </span>
+          <span className="flex items-center gap-1">
+            <div className="w-3 h-1 bg-emerald-500/60 rounded" /> Character present
+          </span>
         </div>
       </div>
     </div>

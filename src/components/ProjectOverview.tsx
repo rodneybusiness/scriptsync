@@ -5,7 +5,7 @@
  * This gives users visibility into what data the AI is using.
  */
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useProject } from '../config/ProjectContext';
 
 interface ProjectOverviewProps {
@@ -13,9 +13,28 @@ interface ProjectOverviewProps {
   onClose: () => void;
 }
 
+/** Estimate pages from script content (industry standard: ~1 page per minute, ~250 words) */
+const estimatePages = (content: string): number => {
+  const words = content.split(/\s+/).filter(Boolean).length;
+  return Math.max(0.5, Math.round((words / 250) * 2) / 2);
+};
+
 export const ProjectOverview: React.FC<ProjectOverviewProps> = ({ isOpen, onClose }) => {
-  const { config } = useProject();
+  const { config, sequences } = useProject();
   const [activeSection, setActiveSection] = useState<'overview' | 'characters' | 'ai'>('overview');
+
+  // Project stats
+  const stats = useMemo(() => {
+    const allScenes = sequences.flatMap(s => s.scenes);
+    const totalPages = allScenes.reduce((sum, s) => sum + estimatePages(s.scriptContent), 0);
+    const totalNotes = allScenes.reduce((sum, s) => sum + s.notes.length, 0);
+    return {
+      pages: Math.round(totalPages),
+      scenes: allScenes.length,
+      sequences: sequences.length,
+      notes: totalNotes
+    };
+  }, [sequences]);
 
   if (!isOpen) return null;
 
@@ -32,6 +51,23 @@ export const ProjectOverview: React.FC<ProjectOverviewProps> = ({ isOpen, onClos
             <div>
               <h1 className="text-2xl font-bold text-white mb-1">{config.title}</h1>
               <p className="text-sm text-zinc-400">{config.description}</p>
+              {/* Project Stats */}
+              <div className="flex items-center gap-4 mt-3 text-xs">
+                <span className="text-zinc-500">
+                  <span className="text-zinc-300 font-medium">~{stats.pages}</span> pages
+                </span>
+                <span className="text-zinc-500">
+                  <span className="text-zinc-300 font-medium">{stats.sequences}</span> sequences
+                </span>
+                <span className="text-zinc-500">
+                  <span className="text-zinc-300 font-medium">{stats.scenes}</span> scenes
+                </span>
+                {stats.notes > 0 && (
+                  <span className="text-zinc-500">
+                    <span className="text-amber-400 font-medium">{stats.notes}</span> notes
+                  </span>
+                )}
+              </div>
             </div>
             <button
               onClick={onClose}

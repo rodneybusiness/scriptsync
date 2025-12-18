@@ -1,7 +1,7 @@
 # ScriptSync Project Creation Enhancement - Execution Plan
 
 > Generated: December 18, 2025
-> **Updated: December 18, 2025** - Complete overhaul for maximum usability
+> **Updated: December 18, 2025** - Complete overhaul + UX polish + Timeline redesign
 > Status: Planning Complete - Ready for Implementation
 > Branch: `claude/align-project-creation-ui-0US27`
 
@@ -50,10 +50,33 @@ New `src/services/characterAnalysis.ts` replaces academic metrics with writer-us
   - Emotional register tracking (conflict, intimate, elevated, comedic)
   - Arc markers (first/last appearance, peak activity scene)
 
-### Navigation Enhanced
-- Project stats bar (estimated pages, scene count, notes count)
-- Quick filters: All, Has Notes, Incomplete, Needs Work
-- Scene badges: page estimate, note count, beat progress, status indicator
+### Navigation Streamlined
+- **Removed from sidebar:** Stats bar, style references (moved to ProjectOverview)
+- **Kept:** Quick filters, scene badges, genre tags (moved to bottom)
+- **Philosophy:** Sidebar is for navigation only, not project metadata
+
+### ProjectOverview Enhanced
+- **Added:** Project stats in header (pages, sequences, scenes, notes)
+- Stats now shown in the right place: the Project Info modal
+
+### Timeline Completely Redesigned
+The old dual-timeline view (for Bell Bottoms-style stories) replaced with **Story Structure** view:
+- **Act Structure Bar:** Visual proportions of Act 1/2/3 with page counts
+- **Sequence Blocks:** Density visualization showing scene count and pages per sequence
+- **Character Presence Swimlanes:** When do main characters appear/disappear across the script?
+- **Scene Flow Grid:** Horizontal card layout with connection indicators
+- **Color Coding:** Blue (Act 1), Amber (Act 2), Red (Act 3)
+
+This is the standard template for 90% of screenplays. Multi-timeline view can be added as a toggle for projects like Bell Bottoms.
+
+### SuggestionsPanel Cleanup
+- **Removed:** "Voice OK" indicator (unnecessary noise)
+
+### ProjectOverview Accessibility Improved
+- **Problem:** ProjectOverview was hidden behind 2 clicks (menu → "Project Info")
+- **Solution:** Project title in Navigation sidebar is now clickable
+- **Result:** One-click access to theme, characters, stats, AI settings
+- **UX Pattern:** "Click on what you want to know about" - natural discovery
 
 ---
 

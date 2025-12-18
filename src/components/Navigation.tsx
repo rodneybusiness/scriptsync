@@ -36,23 +36,13 @@ const getStatusStyle = (status?: SceneStatus): { bg: string; text: string; label
 interface NavigationProps {
   currentSceneId: string;
   onSelectScene: (scene: Scene) => void;
+  onOpenProjectInfo?: () => void;
 }
 
-const Navigation: React.FC<NavigationProps> = ({ currentSceneId, onSelectScene }) => {
+const Navigation: React.FC<NavigationProps> = ({ currentSceneId, onSelectScene, onOpenProjectInfo }) => {
   const { config, sequences } = useProject();
   const [searchQuery, setSearchQuery] = useState('');
   const [filterMode, setFilterMode] = useState<FilterMode>('all');
-
-  // Calculate totals for header stats
-  const allScenes = useMemo(() => sequences.flatMap(s => s.scenes), [sequences]);
-  const totalPages = useMemo(() =>
-    allScenes.reduce((sum, s) => sum + estimatePages(s.scriptContent), 0),
-    [allScenes]
-  );
-  const totalNotes = useMemo(() =>
-    allScenes.reduce((sum, s) => sum + s.notes.length, 0),
-    [allScenes]
-  );
 
   // Filter Logic - search + quick filters
   const filteredData = useMemo(() => {
@@ -91,40 +81,16 @@ const Navigation: React.FC<NavigationProps> = ({ currentSceneId, onSelectScene }
     >
       <div className="p-4 border-b border-zinc-800">
         <h1 className="text-lg font-bold text-zinc-100 tracking-tight">ScriptSync</h1>
-        <p className="text-xs text-zinc-500 uppercase tracking-wider mt-1">{config.title}</p>
-
-        {/* Project Stats Bar */}
-        <div className="flex items-center gap-3 mt-2 text-[10px] text-zinc-500">
-          <span title="Estimated pages">
-            <span className="text-zinc-400 font-medium">{totalPages}</span> pgs
-          </span>
-          <span className="text-zinc-700">|</span>
-          <span title="Total scenes">
-            <span className="text-zinc-400 font-medium">{allScenes.length}</span> scenes
-          </span>
-          {totalNotes > 0 && (
-            <>
-              <span className="text-zinc-700">|</span>
-              <span title="Total notes">
-                <span className="text-amber-400 font-medium">{totalNotes}</span> notes
-              </span>
-            </>
-          )}
-        </div>
-
-        {/* Genre Tags */}
-        {config.genres && config.genres.length > 0 && (
-          <div className="flex flex-wrap gap-1 mt-2 mb-3">
-            {config.genres.map((genre, idx) => (
-              <span
-                key={idx}
-                className="px-1.5 py-0.5 bg-purple-900/30 text-purple-300 text-[9px] rounded border border-purple-700/30 font-medium"
-              >
-                {genre}
-              </span>
-            ))}
-          </div>
-        )}
+        <button
+          onClick={onOpenProjectInfo}
+          className="text-xs text-zinc-500 uppercase tracking-wider mt-1 mb-3 hover:text-blue-400 transition-colors text-left group flex items-center gap-1"
+          title="View project info"
+        >
+          {config.title}
+          <svg className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </button>
 
         {/* Search Bar */}
         <div className="relative">
@@ -162,26 +128,6 @@ const Navigation: React.FC<NavigationProps> = ({ currentSceneId, onSelectScene }
           ))}
         </div>
 
-        {/* Style References (if any) */}
-        {config.ai?.styleReferences && config.ai.styleReferences.length > 0 && (
-          <div className="mt-3 pt-2 border-t border-zinc-800">
-            <p className="text-[9px] text-zinc-600 uppercase tracking-wide mb-1.5">Style References</p>
-            <div className="flex flex-wrap gap-1">
-              {config.ai.styleReferences.slice(0, 4).map((ref, idx) => (
-                <span
-                  key={idx}
-                  className="px-1.5 py-0.5 bg-zinc-800 text-zinc-400 text-[9px] rounded font-medium"
-                  title={ref}
-                >
-                  {ref.length > 15 ? ref.slice(0, 15) + '...' : ref}
-                </span>
-              ))}
-              {config.ai.styleReferences.length > 4 && (
-                <span className="text-[9px] text-zinc-600">+{config.ai.styleReferences.length - 4}</span>
-              )}
-            </div>
-          </div>
-        )}
       </div>
 
       <div className="flex-1 overflow-y-auto p-2">
@@ -274,6 +220,20 @@ const Navigation: React.FC<NavigationProps> = ({ currentSceneId, onSelectScene }
               </div>
             </div>
           ))
+        )}
+
+        {/* Genre Tags - at bottom */}
+        {config.genres && config.genres.length > 0 && (
+          <div className="flex flex-wrap gap-1 mt-6 px-3 pb-2">
+            {config.genres.map((genre, idx) => (
+              <span
+                key={idx}
+                className="px-1.5 py-0.5 bg-purple-900/30 text-purple-300 text-[9px] rounded border border-purple-700/30 font-medium"
+              >
+                {genre}
+              </span>
+            ))}
+          </div>
         )}
       </div>
     </div>

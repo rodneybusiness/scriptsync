@@ -104,12 +104,7 @@ export const SuggestionsIndicator: React.FC<{ sceneId: string }> = ({ sceneId })
             {suggestions.length} suggestion{suggestions.length !== 1 ? 's' : ''}
           </span>
         </>
-      ) : (
-        <>
-          <div className="w-2 h-2 bg-emerald-500 rounded-full" />
-          <span className="text-[10px] text-zinc-500">Voice OK</span>
-        </>
-      )}
+      ) : null}
     </div>
   );
 };
