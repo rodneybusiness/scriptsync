@@ -177,4 +177,63 @@ export interface ProjectConfig {
 export interface ProjectData {
   config: ProjectConfig;
   sequences: Sequence[];
+  /** Optional rewrite tracking data (goals, notes, questions) */
+  rewriteData?: RewriteData;
+}
+
+// =============================================================================
+// REWRITE TRACKING TYPES
+// =============================================================================
+
+export type RewriteStatus = '🔴 REBREAK' | '🟡 POLISH' | '🟠 REWORK';
+export type RewritePriority = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
+
+export interface RewriteGoal {
+  id: string;
+  goal: string;
+  actsAffected: string[];
+  priority: RewritePriority;
+  status: RewriteStatus;
+  passType?: string;
+  sources: string[];
+  concreteNextMove: string;
+  currentDraftHandling: Record<string, string>;
+  implementationNotes: string;
+  whatsStillOff: string;
+  parentItem?: string;
+  subItems?: string[];
+}
+
+export interface PageNotes {
+  amazon: Record<string, string>;
+  pointGrey: Record<string, string>;
+}
+
+export interface OpenQuestions {
+  critical: string[];
+  high: string[];
+  medium: string[];
+  low: string[];
+}
+
+export interface RewriteSummary {
+  total: number;
+  byStatus: {
+    rebreak: number;
+    polish: number;
+    rework: number;
+  };
+  byPriority: {
+    critical: number;
+    high: number;
+    medium: number;
+    low: number;
+  };
+}
+
+export interface RewriteData {
+  goals: RewriteGoal[];
+  pageNotes: PageNotes;
+  openQuestions: OpenQuestions;
+  summary: RewriteSummary;
 }

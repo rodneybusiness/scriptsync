@@ -5,8 +5,8 @@
  * Includes integrated Amazon and Point Grey/Counter Culture feedback notes.
  */
 
-import { ProjectData } from '../../config/types';
-import { config } from './config';
+import { ProjectData, RewriteData } from '../../config/types';
+import { config, PAGE_NOTES, OPEN_QUESTIONS, REWRITE_GOALS, REWRITE_SUMMARY } from './config';
 import { sequences } from './sequences';
 
 const projectData: ProjectData = {
@@ -14,5 +14,15 @@ const projectData: ProjectData = {
   sequences,
 };
 
+/**
+ * Rewrite tracking data - goals, notes, and questions from development process
+ */
+export const rewriteData: RewriteData = {
+  goals: REWRITE_GOALS,
+  pageNotes: PAGE_NOTES,
+  openQuestions: OPEN_QUESTIONS,
+  summary: REWRITE_SUMMARY,
+};
+
 export default projectData;
-export { config, sequences };
+export { config, sequences, PAGE_NOTES, OPEN_QUESTIONS, REWRITE_GOALS, REWRITE_SUMMARY };
