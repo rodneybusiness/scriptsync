@@ -28,15 +28,16 @@ const CharacterDashboard = lazy(() => import('./components/CharacterDashboard'))
 const BeatBoard = lazy(() => import('./components/BeatBoard'));
 const ExportModal = lazy(() => import('./components/ExportModal'));
 const ProjectOverview = lazy(() => import('./components/ProjectOverview'));
+const RewriteTracker = lazy(() => import('./components/RewriteTracker'));
 
-type ViewMode = 'script' | 'timeline' | 'characters' | 'board';
+type ViewMode = 'script' | 'timeline' | 'characters' | 'board' | 'tracker';
 
 interface AppProps {
   onBackToProjects?: () => void;
 }
 
 const App: React.FC<AppProps> = ({ onBackToProjects }) => {
-  const { config, sequences, setSequences } = useProject();
+  const { config, sequences, setSequences, hasRewriteData } = useProject();
 
   const allScenes = useMemo(() => sequences.flatMap(s => s.scenes), [sequences]);
 
@@ -193,6 +194,14 @@ const App: React.FC<AppProps> = ({ onBackToProjects }) => {
               >
                 Arcs
               </button>
+              {hasRewriteData && (
+                <button
+                  onClick={() => setViewMode('tracker')}
+                  className={`px-3 py-1 text-xs font-bold uppercase rounded transition ${viewMode === 'tracker' ? 'bg-zinc-800 text-red-400' : 'text-zinc-500 hover:text-zinc-300'}`}
+                >
+                  Tracker
+                </button>
+              )}
             </div>
 
             {viewMode === 'script' && (
@@ -321,6 +330,31 @@ const App: React.FC<AppProps> = ({ onBackToProjects }) => {
             <ErrorBoundary level="component">
               <Suspense fallback={<CharacterDashboardSkeleton />}>
                 <CharacterDashboard onSelectScene={handleNavigate} />
+              </Suspense>
+            </ErrorBoundary>
+          )}
+
+          {viewMode === 'tracker' && (
+            <ErrorBoundary level="component">
+              <Suspense fallback={
+                <div className="flex-1 bg-zinc-950 p-8">
+                  <div className="max-w-6xl mx-auto">
+                    <div className="h-8 bg-zinc-800 rounded w-48 mb-4 animate-pulse" />
+                    <div className="h-4 bg-zinc-800 rounded w-96 mb-8 animate-pulse" />
+                    <div className="grid grid-cols-8 gap-3 mb-8">
+                      {Array.from({ length: 8 }).map((_, i) => (
+                        <div key={i} className="h-20 bg-zinc-900 rounded-xl animate-pulse" />
+                      ))}
+                    </div>
+                    <div className="space-y-3">
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <div key={i} className="h-24 bg-zinc-900 rounded-xl animate-pulse" />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              }>
+                <RewriteTracker />
               </Suspense>
             </ErrorBoundary>
           )}

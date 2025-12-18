@@ -6,7 +6,17 @@
  */
 
 import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { ProjectConfig, ProjectData, Sequence, CharacterConfig } from './types';
+import {
+  ProjectConfig,
+  ProjectData,
+  Sequence,
+  CharacterConfig,
+  RewriteGoal,
+  PageNotes,
+  OpenQuestions,
+  RewriteSummary,
+  RewriteData,
+} from './types';
 
 // =============================================================================
 // CONTEXT TYPES
@@ -21,6 +31,10 @@ interface ProjectContextValue {
   mainCharacters: CharacterConfig[];
   supportingCharacters: CharacterConfig[];
   allCharacterNames: string[];
+
+  // Rewrite tracking data
+  rewriteData: RewriteData | null;
+  hasRewriteData: boolean;
 
   // State management
   setSequences: React.Dispatch<React.SetStateAction<Sequence[]>>;
@@ -41,11 +55,17 @@ const ProjectContext = createContext<ProjectContextValue | undefined>(undefined)
 interface ProjectProviderProps {
   children: ReactNode;
   projectData: ProjectData;
+  rewriteData?: RewriteData;
 }
 
-export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children, projectData }) => {
+export const ProjectProvider: React.FC<ProjectProviderProps> = ({
+  children,
+  projectData,
+  rewriteData: initialRewriteData,
+}) => {
   const [config] = useState<ProjectConfig>(projectData.config);
   const [sequences, setSequences] = useState<Sequence[]>(projectData.sequences);
+  const [rewriteData] = useState<RewriteData | null>(initialRewriteData || null);
   const [isLoading] = useState(false);
   const [error] = useState<string | null>(null);
 
@@ -53,6 +73,7 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children, proj
   const mainCharacters = config.characters.filter(c => c.role === 'main');
   const supportingCharacters = config.characters.filter(c => c.role === 'supporting');
   const allCharacterNames = config.characters.map(c => c.name);
+  const hasRewriteData = rewriteData !== null && rewriteData.goals.length > 0;
 
   const value: ProjectContextValue = {
     config,
@@ -60,6 +81,8 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children, proj
     mainCharacters,
     supportingCharacters,
     allCharacterNames,
+    rewriteData,
+    hasRewriteData,
     setSequences,
     isLoading,
     error,
@@ -92,7 +115,14 @@ export const loadProject = async (projectId: string): Promise<ProjectData> => {
   try {
     // Dynamic import of project data
     const projectModule = await import(`../projects/${projectId}/index.ts`);
-    return projectModule.default as ProjectData;
+    const projectData = projectModule.default as ProjectData;
+
+    // Include rewrite data if exported by the project
+    if (projectModule.rewriteData) {
+      projectData.rewriteData = projectModule.rewriteData;
+    }
+
+    return projectData;
   } catch (err) {
     console.error(`Failed to load project: ${projectId}`, err);
     throw new Error(`Project "${projectId}" not found or failed to load.`);

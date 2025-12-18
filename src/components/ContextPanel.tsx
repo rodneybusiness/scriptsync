@@ -80,12 +80,46 @@ const MarkdownRenderer: React.FC<{ content: string; className?: string }> = ({ c
   );
 };
 
+// Helper to check if a page number falls within a page note key (e.g., "p1-4", "p5")
+const isPageInRange = (pageKey: string, pageNumber: number): boolean => {
+  const match = pageKey.match(/p(\d+)(?:-(\d+))?/i);
+  if (!match) return false;
+
+  const start = parseInt(match[1], 10);
+  const end = match[2] ? parseInt(match[2], 10) : start;
+
+  return pageNumber >= start && pageNumber <= end;
+};
+
 const ContextPanel: React.FC<ContextPanelProps> = ({ scene, allScenes, boneyard, addToBoneyard }) => {
-  const { config } = useProject();
+  const { config, rewriteData } = useProject();
 
   const [activeTab, setActiveTab] = useState<Tab>(Tab.BEATS);
   const [analysis, setAnalysis] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+  // Get page notes relevant to current scene
+  const relevantPageNotes = React.useMemo(() => {
+    if (!rewriteData?.pageNotes || !scene.pageNumber) return { amazon: [], pointGrey: [] };
+
+    const pageNum = scene.pageNumber;
+    const amazonNotes: { page: string; note: string }[] = [];
+    const pointGreyNotes: { page: string; note: string }[] = [];
+
+    Object.entries(rewriteData.pageNotes.amazon).forEach(([page, note]) => {
+      if (isPageInRange(page, pageNum)) {
+        amazonNotes.push({ page, note });
+      }
+    });
+
+    Object.entries(rewriteData.pageNotes.pointGrey).forEach(([page, note]) => {
+      if (isPageInRange(page, pageNum)) {
+        pointGreyNotes.push({ page, note });
+      }
+    });
+
+    return { amazon: amazonNotes, pointGrey: pointGreyNotes };
+  }, [rewriteData, scene.pageNumber]);
 
   // Boneyard State
   const [snippetInput, setSnippetInput] = useState('');
@@ -230,6 +264,36 @@ const ContextPanel: React.FC<ContextPanelProps> = ({ scene, allScenes, boneyard,
                 <p className="text-sm leading-relaxed opacity-90">{note.content}</p>
               </div>
             ))}
+
+            {/* Page-specific feedback notes from rewrite data */}
+            {(relevantPageNotes.amazon.length > 0 || relevantPageNotes.pointGrey.length > 0) && (
+              <div className="mt-4 pt-4 border-t border-zinc-800">
+                <h4 className="text-xs font-bold text-zinc-400 uppercase mb-3">
+                  Feedback for Page {scene.pageNumber}
+                </h4>
+
+                {relevantPageNotes.amazon.map((item, idx) => (
+                  <div key={`amazon-${idx}`} className="p-3 rounded border mb-2 bg-orange-900/10 border-orange-800/30">
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-xs font-bold text-orange-400">Amazon</span>
+                      <span className="text-[10px] text-orange-400/70">{item.page}</span>
+                    </div>
+                    <p className="text-sm text-zinc-300 leading-relaxed">{item.note}</p>
+                  </div>
+                ))}
+
+                {relevantPageNotes.pointGrey.map((item, idx) => (
+                  <div key={`pg-${idx}`} className="p-3 rounded border mb-2 bg-purple-900/10 border-purple-800/30">
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-xs font-bold text-purple-400">Point Grey</span>
+                      <span className="text-[10px] text-purple-400/70">{item.page}</span>
+                    </div>
+                    <p className="text-sm text-zinc-300 leading-relaxed">{item.note}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+
             <button
               onClick={handleAnalyze}
               disabled={isAnalyzing}

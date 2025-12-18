@@ -299,7 +299,7 @@ const Root: React.FC = () => {
     case 'project':
       if (!projectData) return <LoadingScreen message="Loading project..." />;
       return (
-        <ProjectProvider projectData={projectData}>
+        <ProjectProvider projectData={projectData} rewriteData={projectData.rewriteData}>
           <App onBackToProjects={handleBackToSelector} />
         </ProjectProvider>
       );
