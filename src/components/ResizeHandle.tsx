@@ -16,27 +16,34 @@ const ResizeHandle: React.FC<ResizeHandleProps> = ({ onMouseDown, isResizing }) 
   return (
     <div
       className={`
-        group relative w-2 h-full cursor-col-resize
+        group relative w-3 h-full cursor-col-resize
         flex items-center justify-center
-        hover:bg-blue-500/10 transition-colors duration-150
-        ${isResizing ? 'bg-blue-500/20' : ''}
+        bg-zinc-800/50 hover:bg-blue-500/20 transition-colors duration-150
+        ${isResizing ? 'bg-blue-500/30' : ''}
       `}
       onMouseDown={onMouseDown}
     >
-      {/* Visible grab bar */}
+      {/* Visible grab bar - always visible */}
       <div
         className={`
-          w-1 h-12 rounded-full
+          w-1.5 h-24 rounded-full
           transition-all duration-150
           ${isResizing
-            ? 'bg-blue-500 h-20'
-            : 'bg-zinc-600 group-hover:bg-blue-400 group-hover:h-16'
+            ? 'bg-blue-400 h-32 w-2'
+            : 'bg-zinc-500 group-hover:bg-blue-400 group-hover:h-32'
           }
         `}
       />
 
+      {/* Grip lines for better visibility */}
+      <div className="absolute inset-y-0 left-0 right-0 flex flex-col items-center justify-center gap-1 pointer-events-none">
+        <div className={`w-0.5 h-2 rounded-full ${isResizing ? 'bg-blue-300' : 'bg-zinc-600 group-hover:bg-blue-300'}`} />
+        <div className={`w-0.5 h-2 rounded-full ${isResizing ? 'bg-blue-300' : 'bg-zinc-600 group-hover:bg-blue-300'}`} />
+        <div className={`w-0.5 h-2 rounded-full ${isResizing ? 'bg-blue-300' : 'bg-zinc-600 group-hover:bg-blue-300'}`} />
+      </div>
+
       {/* Expanded hit area (invisible) */}
-      <div className="absolute inset-y-0 -left-1 -right-1" />
+      <div className="absolute inset-y-0 -left-2 -right-2" />
     </div>
   );
 };

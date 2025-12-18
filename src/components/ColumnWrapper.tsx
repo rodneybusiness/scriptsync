@@ -73,11 +73,10 @@ const ColumnWrapper: React.FC<ColumnWrapperProps> = ({
       {showHeader && (
         <div
           className={`
-            flex items-center justify-center h-6 shrink-0
+            flex items-center justify-center h-8 shrink-0
             cursor-grab active:cursor-grabbing
-            border-b border-zinc-800/50
-            bg-gradient-to-b from-zinc-800/30 to-transparent
-            hover:from-zinc-700/40 transition-colors
+            border-b border-zinc-700
+            bg-zinc-800/60 hover:bg-zinc-700/60 transition-colors
             group
           `}
           draggable
@@ -88,14 +87,18 @@ const ColumnWrapper: React.FC<ColumnWrapperProps> = ({
           onDragEnd={onDragEnd}
           title={`Drag to reorder ${title}`}
         >
-          {/* Grip dots */}
-          <div className="flex gap-0.5 opacity-40 group-hover:opacity-70 transition-opacity">
-            <div className="w-1 h-1 rounded-full bg-zinc-400" />
-            <div className="w-1 h-1 rounded-full bg-zinc-400" />
-            <div className="w-1 h-1 rounded-full bg-zinc-400" />
-            <div className="w-1 h-1 rounded-full bg-zinc-400" />
-            <div className="w-1 h-1 rounded-full bg-zinc-400" />
-            <div className="w-1 h-1 rounded-full bg-zinc-400" />
+          {/* Grip icon - two rows of dots */}
+          <div className="flex flex-col gap-1 opacity-50 group-hover:opacity-90 transition-opacity">
+            <div className="flex gap-1">
+              <div className="w-1.5 h-1.5 rounded-full bg-zinc-400" />
+              <div className="w-1.5 h-1.5 rounded-full bg-zinc-400" />
+              <div className="w-1.5 h-1.5 rounded-full bg-zinc-400" />
+            </div>
+            <div className="flex gap-1">
+              <div className="w-1.5 h-1.5 rounded-full bg-zinc-400" />
+              <div className="w-1.5 h-1.5 rounded-full bg-zinc-400" />
+              <div className="w-1.5 h-1.5 rounded-full bg-zinc-400" />
+            </div>
           </div>
         </div>
       )}
