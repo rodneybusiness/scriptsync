@@ -15,6 +15,8 @@ import {
   getSessionMemoryState
 } from '../services/geminiService';
 import { SessionMemoryPanel } from './SessionMemoryPanel';
+import { useAIAgents, useSceneSuggestions } from '../contexts/AIAgentsContext';
+import { MarginNotesContainer } from './MarginNote';
 
 interface ContextPanelProps {
   scene: Scene;
@@ -82,6 +84,11 @@ const MarkdownRenderer: React.FC<{ content: string; className?: string }> = ({ c
 
 const ContextPanel: React.FC<ContextPanelProps> = ({ scene, allScenes, boneyard, addToBoneyard }) => {
   const { config } = useProject();
+
+  // AI Suggestions
+  const suggestions = useSceneSuggestions(scene.id);
+  const { dismissSuggestion, acceptSuggestion } = useAIAgents();
+  const [suggestionsExpanded, setSuggestionsExpanded] = useState(true);
 
   const [activeTab, setActiveTab] = useState<Tab>(Tab.BEATS);
   const [analysis, setAnalysis] = useState<string | null>(null);
@@ -184,6 +191,40 @@ const ContextPanel: React.FC<ContextPanelProps> = ({ scene, allScenes, boneyard,
 
   return (
     <div className="w-full bg-transparent flex flex-col h-full">
+      {/* AI Suggestions Section - Collapsible */}
+      {suggestions.length > 0 && (
+        <div className="border-b border-zinc-800 shrink-0">
+          <button
+            onClick={() => setSuggestionsExpanded(!suggestionsExpanded)}
+            className="w-full flex items-center justify-between px-3 py-2 hover:bg-zinc-800/50 transition-colors"
+          >
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-amber-500" />
+              <span className="text-xs font-medium text-zinc-300">
+                {suggestions.length} AI Suggestion{suggestions.length !== 1 ? 's' : ''}
+              </span>
+            </div>
+            <svg
+              className={`w-4 h-4 text-zinc-500 transition-transform ${suggestionsExpanded ? 'rotate-180' : ''}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          {suggestionsExpanded && (
+            <div className="px-2 pb-2">
+              <MarginNotesContainer
+                suggestions={suggestions}
+                onAccept={acceptSuggestion}
+                onDismiss={dismissSuggestion}
+              />
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Tabs */}
       <div className="flex border-b border-zinc-800 overflow-x-auto scrollbar-hide shrink-0">
         {Object.values(Tab).map((tab) => (
