@@ -130,7 +130,7 @@ Hello.`;
       const result = parseFountainToReact('(whispering)', 0);
 
       expect(result.type).toBe('parenthetical');
-      expect(result.classes).toContain('italic');
+      expect(result.classes).toContain('font-script');
     });
 
     it('parses transitions', () => {
@@ -145,10 +145,16 @@ Hello.`;
       expect(result.type).toBe('transition');
     });
 
-    it('defaults to action for regular text', () => {
-      const result = parseFountainToReact('She walks across the room.', 0);
+    it('treats long action lines as action', () => {
+      const result = parseFountainToReact('She walks determinedly across the vast, echoing marble hallway toward the ornate double doors.', 0);
 
       expect(result.type).toBe('action');
+    });
+
+    it('treats short mixed-case lines as dialogue', () => {
+      const result = parseFountainToReact('She walks across the room.', 0);
+
+      expect(result.type).toBe('dialogue');
     });
   });
 

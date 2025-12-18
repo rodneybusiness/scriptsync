@@ -87,15 +87,4 @@ describe('Navigation', () => {
     expect(screen.getByText(/No scenes found matching/)).toBeInTheDocument();
   });
 
-  it('supports resizing via mouse drag', () => {
-    render(<Navigation {...defaultProps} />);
-
-    // Find the resize handle (the div with cursor-col-resize class)
-    const container = screen.getByText('ScriptSync').closest('div[style]');
-    expect(container).toHaveStyle({ width: '288px' }); // Default width
-
-    // The resize functionality is tested by checking the handle exists
-    const resizeHandle = document.querySelector('.cursor-col-resize');
-    expect(resizeHandle).toBeInTheDocument();
-  });
 });

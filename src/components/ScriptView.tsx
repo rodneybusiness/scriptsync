@@ -2,11 +2,10 @@
  * ScriptView - Main script editing and viewing component
  */
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useProject } from '../config/ProjectContext';
 import { Scene, LintIssue } from '../config/types';
-import { parseFountainToReact, calculatePacingScore, getPacingColor, lintScript } from '../services/scriptUtils';
-import { stopSpeaking } from '../services/ttsService';
+import { parseFountainToReact, lintScript } from '../services/scriptUtils';
 import { SuggestionsIndicator } from './SuggestionsPanel';
 
 interface ScriptViewProps {
@@ -18,6 +17,12 @@ interface ScriptViewProps {
 
 const ScriptView: React.FC<ScriptViewProps> = ({ scene, allScenes, onUpdateScript, onSelectScene }) => {
   const { config, sequences } = useProject();
+
+  // Get current scene index for keyboard navigation
+  const currentSceneIndex = useMemo(() =>
+    allScenes.findIndex(s => s.id === scene.id),
+    [allScenes, scene.id]
+  );
 
   // Get current sequence for context
   const currentSequence = useMemo(() =>
@@ -35,10 +40,6 @@ const ScriptView: React.FC<ScriptViewProps> = ({ scene, allScenes, onUpdateScrip
   const [paradoxWarning, setParadoxWarning] = useState<string | null>(null);
   const [lintIssues, setLintIssues] = useState<LintIssue[]>([]);
 
-  // Audio
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [currentSpeechLine, setCurrentSpeechLine] = useState<number>(-1);
-
   // --- EFFECTS ---
 
   // Sync content when scene changes or variant toggles
@@ -48,8 +49,6 @@ const ScriptView: React.FC<ScriptViewProps> = ({ scene, allScenes, onUpdateScrip
     setIsEditing(false);
     setParadoxWarning(null);
     setLintIssues([]);
-    stopSpeaking();
-    setIsPlaying(false);
   }, [scene.id, activeVariant, scene.scriptContent, scene.variants]);
 
   // Causal Ripple & Proactive Linter
@@ -84,20 +83,59 @@ const ScriptView: React.FC<ScriptViewProps> = ({ scene, allScenes, onUpdateScrip
     setIsEditing(false);
   };
 
-  const togglePlay = () => {
-    if (isPlaying) {
-      stopSpeaking();
-      setIsPlaying(false);
-      setCurrentSpeechLine(-1);
-      return;
-    }
-    // TTS implementation would go here
-    setIsPlaying(true);
-  };
-
   const getConnectedScene = (id: string) => allScenes.find(s => s.id === id);
-  const pacingScore = calculatePacingScore(editContent);
-  const pacingColor = getPacingColor(pacingScore);
+
+  // Keyboard navigation handler
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    // Only handle when not editing
+    if (isEditing) return;
+
+    // Shift + Down Arrow = Next Scene
+    if (e.shiftKey && e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (currentSceneIndex < allScenes.length - 1) {
+        onSelectScene(allScenes[currentSceneIndex + 1]);
+      }
+    }
+
+    // Shift + Up Arrow = Previous Scene
+    if (e.shiftKey && e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (currentSceneIndex > 0) {
+        onSelectScene(allScenes[currentSceneIndex - 1]);
+      }
+    }
+
+    // Shift + Left Arrow = First scene in current sequence
+    if (e.shiftKey && e.key === 'ArrowLeft') {
+      e.preventDefault();
+      const sequenceScenes = allScenes.filter(s => s.sequenceId === scene.sequenceId);
+      if (sequenceScenes.length > 0) {
+        onSelectScene(sequenceScenes[0]);
+      }
+    }
+
+    // Shift + Right Arrow = Last scene in current sequence
+    if (e.shiftKey && e.key === 'ArrowRight') {
+      e.preventDefault();
+      const sequenceScenes = allScenes.filter(s => s.sequenceId === scene.sequenceId);
+      if (sequenceScenes.length > 0) {
+        onSelectScene(sequenceScenes[sequenceScenes.length - 1]);
+      }
+    }
+
+    // 'e' key to enter edit mode
+    if (e.key === 'e' && !e.metaKey && !e.ctrlKey) {
+      e.preventDefault();
+      setIsEditing(true);
+    }
+  }, [isEditing, currentSceneIndex, allScenes, onSelectScene, scene.sequenceId]);
+
+  // Register keyboard listeners
+  useEffect(() => {
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleKeyDown]);
 
   return (
     <div className="flex-1 bg-zinc-950 overflow-hidden relative flex flex-col h-full">
@@ -168,121 +206,92 @@ const ScriptView: React.FC<ScriptViewProps> = ({ scene, allScenes, onUpdateScrip
             </button>
           )}
 
-          {/* Header & Toolbar */}
-          <div className="mb-8 sticky top-0 bg-zinc-950/95 backdrop-blur z-10 pb-4 border-b border-zinc-800">
+          {/* Header & Toolbar - Minimal, clean design */}
+          <div className="mb-6 sticky top-0 bg-zinc-950/95 backdrop-blur z-10 pb-4">
             {paradoxWarning && (
-              <div className="mb-2 bg-red-900/20 border border-red-900/50 text-red-200 text-xs font-bold px-4 py-2 rounded flex justify-between items-center shadow-sm">
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">!</span>
-                  <span>{paradoxWarning}</span>
-                </div>
-                <button className="underline opacity-80 hover:opacity-100 uppercase text-[10px]">Review Connections</button>
+              <div className="mb-3 text-amber-400/80 text-xs flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                {paradoxWarning}
               </div>
             )}
 
-            <div className="flex justify-between items-end">
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-[10px] font-bold text-blue-500 bg-blue-900/20 px-1.5 py-0.5 rounded uppercase tracking-wider">
-                    Current Scene {scene.id}
-                  </span>
-                  {/* Linter Status */}
-                  {lintIssues.length > 0 && isEditing && (
-                    <span className="text-[10px] font-bold text-amber-500 bg-amber-900/20 px-1.5 py-0.5 rounded uppercase tracking-wider flex items-center gap-1">
-                      <span>*</span> {lintIssues.length} Issues Found
-                    </span>
-                  )}
+            <div className="flex justify-between items-start">
+              <div className="flex-1">
+                {/* Scene Title - Primary focus */}
+                <h1 className="text-2xl font-bold text-zinc-100 mb-1 tracking-tight">{scene.title}</h1>
 
-                  {/* Pacing Badge */}
-                  <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-zinc-900 border border-zinc-800`}>
-                    <div className={`w-2 h-2 rounded-full ${pacingColor}`}></div>
-                    <span className="text-[10px] font-bold text-zinc-400 uppercase">{pacingScore}/100 Pacing</span>
-                  </div>
-
-                  {/* AI Agent Status */}
-                  <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-zinc-900 border border-zinc-800">
-                    <SuggestionsIndicator sceneId={scene.id} />
-                  </div>
-                </div>
-                <h1 className="text-3xl font-bold text-white mb-2 font-script tracking-tight">{scene.title.toUpperCase()}</h1>
-
-                {/* Scene & Sequence Context */}
-                <div className="space-y-1">
-                  {scene.summary && (
-                    <p className="text-sm text-zinc-400 leading-relaxed max-w-2xl">
-                      {scene.summary}
-                    </p>
-                  )}
-                  {currentSequence?.dramaticQuestion && (
-                    <p className="text-xs text-blue-400/70 italic">
-                      Sequence: {currentSequence.dramaticQuestion}
-                    </p>
+                {/* Subtle context line */}
+                <div className="flex items-center gap-3 text-xs text-zinc-500">
+                  <span className="font-mono">{scene.id}</span>
+                  {currentSequence && (
+                    <>
+                      <span className="text-zinc-700">|</span>
+                      <span className="italic truncate max-w-md">{currentSequence.dramaticQuestion}</span>
+                    </>
                   )}
                 </div>
               </div>
 
-              <div className="flex gap-2">
-                {/* Audio Button */}
-                <button
-                  onClick={togglePlay}
-                  className={`w-10 h-10 rounded-full flex items-center justify-center transition ${isPlaying ? 'bg-red-500 text-white' : 'bg-zinc-800 text-zinc-400 hover:text-white'}`}
-                  title="AI Table Read"
-                >
-                  {isPlaying ? (
-                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" /></svg>
-                  ) : (
-                    <svg className="w-4 h-4 translate-x-0.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
-                  )}
-                </button>
-
-                <button
-                  onClick={() => isEditing ? handleSave() : setIsEditing(true)}
-                  className={`text-xs font-bold uppercase px-6 py-2 rounded transition shadow-sm ${
-                    isEditing
-                      ? 'bg-green-600 text-white hover:bg-green-500'
-                      : 'bg-zinc-100 text-zinc-900 hover:bg-white'
-                  }`}
-                >
-                  {isEditing ? 'Save' : 'Edit'}
-                </button>
-              </div>
+              {/* Edit button - subtle until hovered */}
+              <button
+                onClick={() => isEditing ? handleSave() : setIsEditing(true)}
+                className={`text-xs px-4 py-1.5 rounded transition ${
+                  isEditing
+                    ? 'bg-emerald-600/90 text-white font-medium'
+                    : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'
+                }`}
+              >
+                {isEditing ? 'Save' : 'Edit'}
+              </button>
             </div>
 
-            {/* Branching Realities Tabs */}
-            {scene.variants && (
-              <div className="flex mt-4 border-b border-zinc-800">
-                <button
-                  onClick={() => setActiveVariant('A')}
-                  className={`px-4 py-2 text-xs font-bold uppercase tracking-wider border-b-2 transition ${activeVariant === 'A' ? 'border-blue-500 text-blue-400' : 'border-transparent text-zinc-500 hover:text-zinc-300'}`}
-                >
-                  Version A (Original)
-                </button>
-                <button
-                  onClick={() => setActiveVariant('B')}
-                  className={`px-4 py-2 text-xs font-bold uppercase tracking-wider border-b-2 transition ${activeVariant === 'B' ? 'border-purple-500 text-purple-400' : 'border-transparent text-zinc-500 hover:text-zinc-300'}`}
-                >
-                  Version B (Alternate)
-                </button>
+            {/* Linter warnings - only when editing */}
+            {lintIssues.length > 0 && isEditing && (
+              <div className="mt-3 text-xs text-amber-500/70 flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                {lintIssues.length} style suggestion{lintIssues.length !== 1 ? 's' : ''}
               </div>
             )}
+
+            {/* AI Suggestions - subtle indicator */}
+            <div className="mt-2">
+              <SuggestionsIndicator sceneId={scene.id} />
+            </div>
           </div>
 
-          {/* Script Content Editor */}
-          <div className="min-h-[800px] bg-zinc-900/30 rounded-sm border-l-4 border-zinc-800 p-8 lg:p-16 shadow-inner relative">
+          {/* Branching Realities Tabs */}
+          {scene.variants && (
+            <div className="flex mb-6 gap-4">
+              <button
+                onClick={() => setActiveVariant('A')}
+                className={`text-xs transition ${activeVariant === 'A' ? 'text-zinc-200 underline underline-offset-4' : 'text-zinc-500 hover:text-zinc-300'}`}
+              >
+                Version A
+              </button>
+              <button
+                onClick={() => setActiveVariant('B')}
+                className={`text-xs transition ${activeVariant === 'B' ? 'text-zinc-200 underline underline-offset-4' : 'text-zinc-500 hover:text-zinc-300'}`}
+              >
+                Version B
+              </button>
+            </div>
+          )}
 
+          {/* Script Content - Dark theme, full panel, responsive */}
+          <div className="flex-1 relative">
             {isEditing ? (
-              <div className="relative">
-                {/* Linter Highlights Overlay */}
-                <div className="absolute -left-12 top-0 bottom-0 w-8 flex flex-col items-end pt-1">
+              <div className="relative h-full border border-zinc-700/50 rounded-lg bg-zinc-900/30">
+                {/* Linter Highlights */}
+                <div className="absolute left-2 top-6 bottom-6 w-4 flex flex-col items-end">
                   {lintIssues.map(issue => (
                     <div
                       key={issue.id}
-                      className="absolute right-0 w-2 h-2 rounded-full bg-amber-500 cursor-help group"
-                      style={{ top: `${(issue.line * 1.5) + 1}rem` }}
+                      className="absolute right-0 w-1.5 h-1.5 rounded-full bg-amber-500/70 cursor-help group"
+                      style={{ top: `${(issue.line * 1.6) + 0.5}rem` }}
                     >
                       <div className="absolute left-4 top-0 w-48 bg-zinc-800 text-xs p-2 rounded border border-zinc-700 shadow-xl opacity-0 group-hover:opacity-100 pointer-events-none z-50">
-                        <span className="font-bold text-amber-400 block mb-1 capitalize">{issue.type} Issue</span>
-                        {issue.message}
+                        <span className="text-amber-400 block mb-1">{issue.type}</span>
+                        <span className="text-zinc-400">{issue.message}</span>
                       </div>
                     </div>
                   ))}
@@ -291,24 +300,33 @@ const ScriptView: React.FC<ScriptViewProps> = ({ scene, allScenes, onUpdateScrip
                 <textarea
                   value={editContent}
                   onChange={(e) => setEditContent(e.target.value)}
-                  className="w-full h-[800px] bg-transparent text-zinc-200 font-script text-lg leading-relaxed border-none focus:ring-0 resize-none outline-none"
+                  className="w-full h-full min-h-[600px] bg-transparent text-zinc-200 font-script text-[13px] leading-relaxed border-none focus:ring-0 resize-none outline-none p-8 pl-10"
                   spellCheck={false}
                   autoFocus
                 />
               </div>
             ) : (
-              <div className="font-script space-y-1">
-                {editContent.split('\n').map((line, i) => {
-                  const { content, classes } = parseFountainToReact(line, i);
-                  const isSpoken = isPlaying && i === currentSpeechLine;
-                  return (
-                    <div key={i} className={`${classes} ${isSpoken ? 'bg-yellow-900/30 text-yellow-100 transition duration-300 rounded px-2 -mx-2' : ''}`}>
-                      {content}
-                    </div>
-                  );
-                })}
+              /* Dark theme screenplay page with subtle border */
+              <div className="h-full border border-zinc-800 rounded-lg bg-zinc-900/50 overflow-y-auto">
+                {/* Page content with screenplay margins */}
+                <div className="px-8 md:px-12 lg:px-16 py-10">
+                  {editContent.split('\n').map((line, i) => {
+                    const { content, classes } = parseFountainToReact(line, i);
+                    return (
+                      <div key={i} className={classes}>
+                        {content}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             )}
+          </div>
+
+          {/* Keyboard shortcuts hint */}
+          <div className="mt-4 text-[10px] text-zinc-600 flex gap-4">
+            <span><kbd className="px-1 py-0.5 bg-zinc-800 rounded text-zinc-400">Shift</kbd> + <kbd className="px-1 py-0.5 bg-zinc-800 rounded text-zinc-400">↑↓</kbd> Navigate scenes</span>
+            <span><kbd className="px-1 py-0.5 bg-zinc-800 rounded text-zinc-400">e</kbd> Edit</span>
           </div>
         </div>
       </div>

@@ -37,16 +37,6 @@ describe('RewriteTracker', () => {
     expect(screen.getByText('Test question?')).toBeInTheDocument();
   });
 
-  it('switches to notes tab when clicked', () => {
-    render(<RewriteTracker />, { projectData, rewriteData });
-
-    const notesTab = screen.getByRole('button', { name: /Page Notes/i });
-    fireEvent.click(notesTab);
-
-    expect(notesTab).toHaveClass('bg-purple-600/20');
-    // Check for Amazon source tab
-    expect(screen.getByRole('button', { name: /Amazon/i })).toBeInTheDocument();
-  });
 
   it('displays rewrite goals', () => {
     render(<RewriteTracker />, { projectData, rewriteData });
@@ -89,19 +79,6 @@ describe('RewriteTracker', () => {
     expect(screen.getByText('No Rewrite Data')).toBeInTheDocument();
   });
 
-  it('displays page notes with page numbers', () => {
-    render(<RewriteTracker />, { projectData, rewriteData });
-
-    // Navigate to notes tab
-    const notesTab = screen.getByRole('button', { name: /Page Notes/i });
-    fireEvent.click(notesTab);
-
-    // Should show page 1 note
-    expect(screen.getByText('Test note')).toBeInTheDocument();
-    // Page number "1" appears multiple times (stat cards + notes), check at least one exists
-    const pageNumbers = screen.getAllByText('1');
-    expect(pageNumbers.length).toBeGreaterThan(0);
-  });
 
   it('displays open questions organized by priority', () => {
     render(<RewriteTracker />, { projectData, rewriteData });

@@ -4,7 +4,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useProject } from '../config/ProjectContext';
-import { Scene, NoteType, BoneyardItem } from '../config/types';
+import { Scene, NoteType, BoneyardItem, RewriteGoal, RewriteStatus, RewritePriority } from '../config/types';
 import {
   analyzeSceneGap,
   chatWithScriptDoctor,
@@ -30,9 +30,11 @@ interface ContextPanelProps {
 enum Tab {
   BEATS = 'Beats',
   NOTES = 'Notes',
-  CONTINUITY = 'Continuity',
-  BONEYARD = 'Boneyard',
-  DOCTOR = 'Dr. Claude'
+  FEEDBACK = 'Studio',
+  GOALS = 'Goals',
+  CONTINUITY = 'Track',
+  BONEYARD = 'Cuts',
+  DOCTOR = 'AI'
 }
 
 // Simple Markdown Renderer Component
@@ -130,6 +132,54 @@ const ContextPanel: React.FC<ContextPanelProps> = ({ scene, allScenes, boneyard,
 
     return { amazon: amazonNotes, pointGrey: pointGreyNotes };
   }, [rewriteData, scene.pageNumber]);
+
+  // Get rewrite goals relevant to current scene's act/sequence
+  const relevantGoals = React.useMemo(() => {
+    if (!rewriteData?.goals) return [];
+
+    // Extract sequence number from scene.sequenceId (e.g., "SEQ_1" -> "1")
+    const seqMatch = scene.sequenceId?.match(/(\d+)/);
+    const seqNum = seqMatch ? seqMatch[1] : null;
+
+    return rewriteData.goals.filter(goal => {
+      // Always include goals that affect "All" acts
+      const affectsAll = goal.actsAffected.some(act =>
+        act.toLowerCase().includes('all')
+      );
+      if (affectsAll) return true;
+
+      // Check if any actsAffected matches the current sequence
+      if (seqNum) {
+        return goal.actsAffected.some(act => {
+          // Match patterns like "1", "2B", "esp. 1 & 2", etc.
+          const actNumbers = act.match(/\d+/g);
+          return actNumbers?.includes(seqNum);
+        });
+      }
+
+      return false;
+    });
+  }, [rewriteData, scene.sequenceId]);
+
+  // Status label helpers for Goals display
+  const getStatusStyle = (status: RewriteStatus) => {
+    switch (status) {
+      case '🔴 REBREAK': return 'text-red-400 bg-red-500/20 border-red-500/30';
+      case '🟡 POLISH': return 'text-yellow-400 bg-yellow-500/20 border-yellow-500/30';
+      case '🟠 REWORK': return 'text-orange-400 bg-orange-500/20 border-orange-500/30';
+      default: return 'text-zinc-400 bg-zinc-500/20 border-zinc-500/30';
+    }
+  };
+
+  const getPriorityStyle = (priority: RewritePriority) => {
+    switch (priority) {
+      case 'CRITICAL': return 'text-red-500 bg-red-600/20 border-red-600/40';
+      case 'HIGH': return 'text-orange-400 bg-orange-500/20 border-orange-500/30';
+      case 'MEDIUM': return 'text-blue-400 bg-blue-500/20 border-blue-500/30';
+      case 'LOW': return 'text-zinc-400 bg-zinc-700/30 border-zinc-600/30';
+      default: return 'text-zinc-400 bg-zinc-700/30 border-zinc-600/30';
+    }
+  };
 
   // Boneyard State
   const [snippetInput, setSnippetInput] = useState('');
@@ -310,7 +360,7 @@ const ContextPanel: React.FC<ContextPanelProps> = ({ scene, allScenes, boneyard,
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`flex-1 min-w-[70px] py-3 text-[10px] font-medium uppercase tracking-wider transition-colors whitespace-nowrap px-2 ${
+            className={`py-2.5 text-[9px] font-semibold uppercase tracking-wide transition-colors whitespace-nowrap px-3 ${
               activeTab === tab
                 ? 'text-blue-400 border-b-2 border-blue-400 bg-zinc-800/50'
                 : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800'
@@ -337,47 +387,25 @@ const ContextPanel: React.FC<ContextPanelProps> = ({ scene, allScenes, boneyard,
           </div>
         )}
 
-        {/* NOTES TAB */}
+        {/* SCENE NOTES TAB */}
         {activeTab === Tab.NOTES && (
           <div className="space-y-3">
-            <h3 className="text-sm font-bold text-zinc-100 mb-2">Rewrite Notes</h3>
-            {scene.notes.map((note) => (
-              <div key={note.id} className={`p-3 rounded border ${getNoteColor(note.type)}`}>
-                <div className="flex justify-between items-center mb-1">
-                  <span className="text-xs font-bold">{note.author}</span>
-                  <span className="text-[10px] uppercase opacity-70 border px-1 rounded border-current">{note.type}</span>
+            <h3 className="text-sm font-bold text-zinc-100 mb-2">Scene Notes</h3>
+            <p className="text-xs text-zinc-500 mb-3">Author annotations for this scene</p>
+            {scene.notes.length === 0 ? (
+              <p className="text-xs text-zinc-600 italic p-3 bg-zinc-900/50 rounded border border-zinc-800">
+                No notes for this scene yet.
+              </p>
+            ) : (
+              scene.notes.map((note) => (
+                <div key={note.id} className={`p-3 rounded border ${getNoteColor(note.type)}`}>
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-xs font-bold">{note.author}</span>
+                    <span className="text-[10px] uppercase opacity-70 border px-1 rounded border-current">{note.type}</span>
+                  </div>
+                  <p className="text-sm leading-relaxed opacity-90">{note.content}</p>
                 </div>
-                <p className="text-sm leading-relaxed opacity-90">{note.content}</p>
-              </div>
-            ))}
-
-            {/* Page-specific feedback notes from rewrite data */}
-            {(relevantPageNotes.amazon.length > 0 || relevantPageNotes.pointGrey.length > 0) && (
-              <div className="mt-4 pt-4 border-t border-zinc-800">
-                <h4 className="text-xs font-bold text-zinc-400 uppercase mb-3">
-                  Feedback for Page {scene.pageNumber}
-                </h4>
-
-                {relevantPageNotes.amazon.map((item, idx) => (
-                  <div key={`amazon-${idx}`} className="p-3 rounded border mb-2 bg-orange-900/10 border-orange-800/30">
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="text-xs font-bold text-orange-400">Amazon</span>
-                      <span className="text-[10px] text-orange-400/70">{item.page}</span>
-                    </div>
-                    <p className="text-sm text-zinc-300 leading-relaxed">{item.note}</p>
-                  </div>
-                ))}
-
-                {relevantPageNotes.pointGrey.map((item, idx) => (
-                  <div key={`pg-${idx}`} className="p-3 rounded border mb-2 bg-purple-900/10 border-purple-800/30">
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="text-xs font-bold text-purple-400">Point Grey</span>
-                      <span className="text-[10px] text-purple-400/70">{item.page}</span>
-                    </div>
-                    <p className="text-sm text-zinc-300 leading-relaxed">{item.note}</p>
-                  </div>
-                ))}
-              </div>
+              ))
             )}
 
             <button
@@ -392,6 +420,101 @@ const ContextPanel: React.FC<ContextPanelProps> = ({ scene, allScenes, boneyard,
                 <h4 className="text-xs font-bold text-zinc-400 uppercase mb-3 border-b border-zinc-700 pb-2">AI Analysis Results</h4>
                 <MarkdownRenderer content={analysis} />
               </div>
+            )}
+          </div>
+        )}
+
+        {/* FEEDBACK TAB - Studio notes from Amazon/Point Grey */}
+        {activeTab === Tab.FEEDBACK && (
+          <div className="space-y-3">
+            <h3 className="text-sm font-bold text-zinc-100 mb-2">Studio Feedback</h3>
+            <p className="text-xs text-zinc-500 mb-3">External notes relevant to page {scene.pageNumber || 'N/A'}</p>
+
+            {relevantPageNotes.amazon.length === 0 && relevantPageNotes.pointGrey.length === 0 ? (
+              <p className="text-xs text-zinc-600 italic p-3 bg-zinc-900/50 rounded border border-zinc-800">
+                No studio feedback for this page.
+              </p>
+            ) : (
+              <>
+                {relevantPageNotes.amazon.map((item, idx) => (
+                  <div key={`amazon-${idx}`} className="p-3 rounded border bg-orange-900/10 border-orange-800/30">
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-xs font-bold text-orange-400">Amazon</span>
+                      <span className="text-[10px] text-orange-400/70">{item.page}</span>
+                    </div>
+                    <p className="text-sm text-zinc-300 leading-relaxed">{item.note}</p>
+                  </div>
+                ))}
+
+                {relevantPageNotes.pointGrey.map((item, idx) => (
+                  <div key={`pg-${idx}`} className="p-3 rounded border bg-purple-900/10 border-purple-800/30">
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-xs font-bold text-purple-400">Point Grey</span>
+                      <span className="text-[10px] text-purple-400/70">{item.page}</span>
+                    </div>
+                    <p className="text-sm text-zinc-300 leading-relaxed">{item.note}</p>
+                  </div>
+                ))}
+              </>
+            )}
+          </div>
+        )}
+
+        {/* GOALS TAB - Rewrite goals relevant to this scene/act */}
+        {activeTab === Tab.GOALS && (
+          <div className="space-y-3">
+            <h3 className="text-sm font-bold text-zinc-100 mb-2">Rewrite Goals</h3>
+            <p className="text-xs text-zinc-500 mb-3">
+              Goals affecting {scene.sequenceId ? `Sequence ${scene.sequenceId.replace('SEQ_', '')}` : 'this scene'}
+            </p>
+
+            {relevantGoals.length === 0 ? (
+              <p className="text-xs text-zinc-600 italic p-3 bg-zinc-900/50 rounded border border-zinc-800">
+                No rewrite goals affect this section.
+              </p>
+            ) : (
+              relevantGoals.map((goal) => (
+                <div
+                  key={goal.id}
+                  className="p-3 rounded-lg border bg-zinc-900/50 border-zinc-800 hover:border-zinc-700 transition"
+                >
+                  {/* Header: Status emoji + Priority badge */}
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-lg">{goal.status.split(' ')[0]}</span>
+                    <span className={`px-1.5 py-0.5 text-[10px] font-bold uppercase rounded border ${getPriorityStyle(goal.priority)}`}>
+                      {goal.priority}
+                    </span>
+                    {goal.passType && (
+                      <span className="px-1.5 py-0.5 text-[10px] text-zinc-400 bg-zinc-800 rounded">
+                        {goal.passType}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Goal title */}
+                  <p className="text-sm font-medium text-zinc-200 mb-2">{goal.goal}</p>
+
+                  {/* Next move - the actionable item */}
+                  <div className="p-2 bg-emerald-900/10 rounded border border-emerald-900/30 mb-2">
+                    <p className="text-[10px] text-emerald-400 uppercase tracking-wide mb-0.5">Next Move</p>
+                    <p className="text-xs text-zinc-300">{goal.concreteNextMove}</p>
+                  </div>
+
+                  {/* Acts affected + Sources */}
+                  <div className="flex flex-wrap gap-1 text-[10px]">
+                    <span className="text-zinc-500">Acts: {goal.actsAffected.join(', ')}</span>
+                    <span className="text-zinc-600">•</span>
+                    {goal.sources.slice(0, 2).map((source, i) => (
+                      <span key={i} className="px-1 py-0.5 bg-zinc-800 text-zinc-400 rounded">
+                        {source}
+                      </span>
+                    ))}
+                    {goal.sources.length > 2 && (
+                      <span className="text-zinc-600">+{goal.sources.length - 2}</span>
+                    )}
+                  </div>
+                </div>
+              ))
             )}
           </div>
         )}

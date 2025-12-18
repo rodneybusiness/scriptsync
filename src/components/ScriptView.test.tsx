@@ -42,13 +42,7 @@ Hello? Anyone here?`,
   it('renders the scene title', () => {
     render(<ScriptView {...defaultProps} />, { projectData });
 
-    expect(screen.getByText('TEST SCENE TITLE')).toBeInTheDocument();
-  });
-
-  it('displays the scene summary', () => {
-    render(<ScriptView {...defaultProps} />, { projectData });
-
-    expect(screen.getByText('This is the scene summary')).toBeInTheDocument();
+    expect(screen.getByText('Test Scene Title')).toBeInTheDocument();
   });
 
   it('displays the sequence dramatic question', () => {
@@ -98,12 +92,6 @@ Hello? Anyone here?`,
     fireEvent.click(screen.getByRole('button', { name: /Save/i }));
 
     expect(mockOnUpdateScript).toHaveBeenCalledWith('New content');
-  });
-
-  it('displays pacing score badge', () => {
-    render(<ScriptView {...defaultProps} />, { projectData });
-
-    expect(screen.getByText(/Pacing/i)).toBeInTheDocument();
   });
 
   it('shows variant tabs when scene has variants', () => {
@@ -171,12 +159,5 @@ Hello? Anyone here?`,
     // Should render connection button
     const connectionButton = screen.getByRole('button', { name: '1' });
     expect(connectionButton).toBeInTheDocument();
-  });
-
-  it('has play/pause button for audio', () => {
-    render(<ScriptView {...defaultProps} />, { projectData });
-
-    const playButton = screen.getByTitle('AI Table Read');
-    expect(playButton).toBeInTheDocument();
   });
 });

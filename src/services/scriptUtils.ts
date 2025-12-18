@@ -125,55 +125,92 @@ export interface ParsedLine {
 
 /**
  * Parse a line of Fountain-formatted script into a renderable object
+ * Uses Final Draft-style formatting with industry-standard margins:
+ * - Scene headings: Left margin, uppercase, bold
+ * - Action: Full width, left-aligned
+ * - Character: Centered at ~42% from left
+ * - Dialogue: Centered block (~25% margins)
+ * - Parenthetical: Slightly narrower than dialogue
+ * - Transitions: Right-aligned
  */
 export const parseFountainToReact = (line: string, _index: number): ParsedLine => {
   const trimmed = line.trim();
 
-  // Scene heading (slugline)
+  // Base font class for screenplay look (Courier Prime or monospace)
+  const fontBase = "font-script";
+
+  // Empty line - provides proper spacing between elements
+  if (!trimmed) {
+    return {
+      type: 'action',
+      content: '\u00A0',
+      classes: "h-6" // Single line height for spacing
+    };
+  }
+
+  // Scene heading (slugline) - Left aligned, uppercase, bold
+  // Industry standard: 1.5" from left edge
   if (trimmed.startsWith('INT.') || trimmed.startsWith('EXT.') || trimmed.startsWith('I/E.')) {
     return {
       type: 'slugline',
       content: trimmed,
-      classes: "font-bold text-zinc-100 mt-8 mb-4 uppercase tracking-widest text-lg border-b border-zinc-800 pb-2"
+      classes: `${fontBase} font-bold text-zinc-50 mt-8 mb-4 uppercase text-sm tracking-wide`
     };
   }
 
-  // Transition
+  // Transition - Right aligned, uppercase
+  // Industry standard: 6" from left edge (right-aligned)
   if (trimmed.endsWith(' TO:') || trimmed === 'FADE OUT.' || trimmed === 'CUT TO BLACK.' || trimmed === 'FADE IN:') {
     return {
       type: 'transition',
       content: trimmed,
-      classes: "font-bold text-zinc-400 mt-4 mb-4 uppercase text-right w-full tracking-wider text-sm"
+      classes: `${fontBase} text-zinc-400 mt-6 mb-4 uppercase text-right text-[13px]`
     };
   }
 
-  // Character heading (all caps)
-  const isCharacter = /^[A-Z][A-Z0-9\s\.\']+$/.test(trimmed) &&
+  // Character name (all caps, possibly with extension like (V.O.) or (CONT'D))
+  // Industry standard: 3.7" from left edge (centered)
+  const charMatch = trimmed.match(/^([A-Z][A-Z0-9\s\.\']+)(\s*\([A-Z\.\s\']+\))?$/);
+  const isCharacter = charMatch &&
     !trimmed.includes('EXT.') &&
     !trimmed.includes('INT.') &&
+    !trimmed.endsWith(' TO:') &&
     trimmed.length < 50;
   if (isCharacter) {
     return {
       type: 'character',
       content: trimmed,
-      classes: "font-bold text-zinc-200 mt-6 mb-0 w-[60%] mx-auto text-center tracking-wide"
+      classes: `${fontBase} text-zinc-200 mt-5 mb-0 ml-[42%] text-[13px] uppercase`
     };
   }
 
-  // Parenthetical
+  // Parenthetical - Centered, italics, in parentheses
+  // Industry standard: 3.1" from left edge, narrower than dialogue
   if (trimmed.startsWith('(') && trimmed.endsWith(')')) {
     return {
       type: 'parenthetical',
       content: trimmed,
-      classes: "text-zinc-400 w-[50%] mx-auto text-center text-sm italic mb-1"
+      classes: `${fontBase} text-zinc-400 ml-[33%] mr-[33%] text-[13px] leading-snug mb-0`
     };
   }
 
-  // Default: action/description line
+  // Dialogue detection - short/medium lines with lowercase (likely follows character)
+  // Industry standard: 2.5" from left edge, 2.5" from right
+  const looksLikeDialogue = trimmed.length < 70 && /[a-z]/.test(trimmed);
+  if (looksLikeDialogue) {
+    return {
+      type: 'dialogue',
+      content: trimmed,
+      classes: `${fontBase} text-zinc-200 ml-[25%] mr-[25%] text-[13px] leading-relaxed mb-0`
+    };
+  }
+
+  // Default: action/description line - Full width
+  // Industry standard: 1.5" from left edge, full width
   return {
     type: 'action',
     content: line,
-    classes: "text-zinc-300 whitespace-pre-wrap max-w-3xl leading-relaxed font-script text-[1.1rem]"
+    classes: `${fontBase} text-zinc-300 text-[13px] leading-relaxed mb-2`
   };
 };
 

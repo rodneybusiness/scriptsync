@@ -46,3 +46,37 @@ vi.stubGlobal('IntersectionObserver', vi.fn().mockImplementation(() => ({
   unobserve: vi.fn(),
   disconnect: vi.fn(),
 })));
+
+// Mock indexedDB for MemoryPalace
+const indexedDBMock = {
+  open: vi.fn().mockReturnValue({
+    onupgradeneeded: null,
+    onsuccess: null,
+    onerror: null,
+    result: {
+      objectStoreNames: { contains: vi.fn().mockReturnValue(false) },
+      createObjectStore: vi.fn().mockReturnValue({
+        createIndex: vi.fn(),
+      }),
+      transaction: vi.fn().mockReturnValue({
+        objectStore: vi.fn().mockReturnValue({
+          getAll: vi.fn().mockReturnValue({
+            onsuccess: null,
+            onerror: null,
+            result: [],
+          }),
+          put: vi.fn().mockReturnValue({
+            onsuccess: null,
+            onerror: null,
+          }),
+          delete: vi.fn().mockReturnValue({
+            onsuccess: null,
+            onerror: null,
+          }),
+        }),
+      }),
+    },
+  }),
+  deleteDatabase: vi.fn(),
+};
+vi.stubGlobal('indexedDB', indexedDBMock);

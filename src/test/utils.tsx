@@ -4,6 +4,7 @@
 import React, { ReactNode } from 'react';
 import { render, RenderOptions, RenderResult } from '@testing-library/react';
 import { ProjectProvider } from '../config/ProjectContext';
+import { AIAgentsProvider } from '../contexts/AIAgentsContext';
 import type { ProjectData, ProjectConfig, Sequence, Scene, RewriteData } from '../config/types';
 
 // =============================================================================
@@ -117,9 +118,14 @@ export const renderWithProvider = (
     ...renderOptions
   } = options;
 
+  const mockScene = projectData.sequences[0]?.scenes[0] || createMockScene();
+  const allScenes = projectData.sequences.flatMap(seq => seq.scenes);
+
   const Wrapper = ({ children }: { children: ReactNode }) => (
     <ProjectProvider projectData={projectData} rewriteData={rewriteData}>
-      {children}
+      <AIAgentsProvider currentScene={mockScene} allScenes={allScenes}>
+        {children}
+      </AIAgentsProvider>
     </ProjectProvider>
   );
 

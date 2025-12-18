@@ -19,7 +19,7 @@ import {
 
 type FilterStatus = 'all' | RewriteStatus;
 type FilterPriority = 'all' | RewritePriority;
-type ViewTab = 'goals' | 'questions' | 'notes';
+type ViewTab = 'goals' | 'questions';
 
 // =============================================================================
 // STATUS & PRIORITY HELPERS
@@ -252,77 +252,6 @@ const QuestionsPanel: React.FC<QuestionsPanelProps> = ({ questions }) => {
 };
 
 // =============================================================================
-// PAGE NOTES PANEL
-// =============================================================================
-
-interface NotesPanelProps {
-  pageNotes: {
-    amazon: Record<string, string>;
-    pointGrey: Record<string, string>;
-  };
-}
-
-const NotesPanel: React.FC<NotesPanelProps> = ({ pageNotes }) => {
-  const [activeSource, setActiveSource] = useState<'amazon' | 'pointGrey'>('amazon');
-
-  const notes = activeSource === 'amazon' ? pageNotes.amazon : pageNotes.pointGrey;
-  const sortedPages = Object.keys(notes).sort((a, b) => {
-    const pageA = parseInt(a.replace(/\D/g, '')) || 0;
-    const pageB = parseInt(b.replace(/\D/g, '')) || 0;
-    return pageA - pageB;
-  });
-
-  return (
-    <div>
-      {/* Source Tabs */}
-      <div className="flex gap-2 mb-6">
-        <button
-          onClick={() => setActiveSource('amazon')}
-          className={`px-4 py-2 text-sm font-bold uppercase rounded-lg transition ${
-            activeSource === 'amazon'
-              ? 'bg-orange-600/20 text-orange-400 border border-orange-500/30'
-              : 'bg-zinc-800 text-zinc-400 border border-zinc-700 hover:text-zinc-200'
-          }`}
-        >
-          Amazon ({Object.keys(pageNotes.amazon).length})
-        </button>
-        <button
-          onClick={() => setActiveSource('pointGrey')}
-          className={`px-4 py-2 text-sm font-bold uppercase rounded-lg transition ${
-            activeSource === 'pointGrey'
-              ? 'bg-purple-600/20 text-purple-400 border border-purple-500/30'
-              : 'bg-zinc-800 text-zinc-400 border border-zinc-700 hover:text-zinc-200'
-          }`}
-        >
-          Point Grey ({Object.keys(pageNotes.pointGrey).length})
-        </button>
-      </div>
-
-      {/* Notes Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-        {sortedPages.map(page => (
-          <div
-            key={page}
-            className={`p-4 rounded-lg border ${
-              activeSource === 'amazon'
-                ? 'bg-orange-900/10 border-orange-800/30'
-                : 'bg-purple-900/10 border-purple-800/30'
-            }`}
-          >
-            <div className={`text-xs font-bold uppercase mb-1 ${
-              activeSource === 'amazon' ? 'text-orange-400' : 'text-purple-400'
-            }`}>
-              {page}
-            </div>
-            <p className="text-sm text-zinc-300">{notes[page]}</p>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
-
-// =============================================================================
 // MAIN COMPONENT
 // =============================================================================
 
@@ -361,7 +290,7 @@ const RewriteTracker: React.FC = () => {
     );
   }
 
-  const { summary, openQuestions, pageNotes } = rewriteData;
+  const { summary, openQuestions } = rewriteData;
 
   return (
     <div className="flex-1 bg-zinc-950 overflow-y-auto p-8 min-h-screen font-sans">
@@ -371,7 +300,7 @@ const RewriteTracker: React.FC = () => {
           <h1 className="text-3xl font-bold text-zinc-100 mb-2">Rewrite Tracker</h1>
           <p className="text-zinc-400 max-w-xl">
             Development progress for <span className="text-blue-400 font-bold">{config.title}</span> —
-            tracking goals, feedback, and open questions.
+            tracking rewrite goals and open questions.
           </p>
         </div>
 
@@ -466,19 +395,6 @@ const RewriteTracker: React.FC = () => {
               openQuestions.low.length
             })
           </button>
-          <button
-            onClick={() => setActiveTab('notes')}
-            className={`px-4 py-2 text-sm font-bold uppercase rounded-lg transition ${
-              activeTab === 'notes'
-                ? 'bg-purple-600/20 text-purple-400 border border-purple-500/30'
-                : 'bg-zinc-900 text-zinc-400 border border-zinc-800 hover:text-zinc-200'
-            }`}
-          >
-            Page Notes ({
-              Object.keys(pageNotes.amazon).length +
-              Object.keys(pageNotes.pointGrey).length
-            })
-          </button>
         </div>
 
         {/* Active Filter Indicator */}
@@ -528,10 +444,6 @@ const RewriteTracker: React.FC = () => {
 
         {activeTab === 'questions' && (
           <QuestionsPanel questions={openQuestions} />
-        )}
-
-        {activeTab === 'notes' && (
-          <NotesPanel pageNotes={pageNotes} />
         )}
       </div>
     </div>
