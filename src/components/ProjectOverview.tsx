@@ -91,25 +91,68 @@ export const ProjectOverview: React.FC<ProjectOverviewProps> = ({ isOpen, onClos
                 </div>
               </section>
 
-              {/* Themes */}
-              <section>
-                <h3 className="text-xs font-bold text-emerald-400 uppercase tracking-wide mb-2">
-                  Themes ({config.themes.length})
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                  {config.themes.map((theme, idx) => (
-                    <div
-                      key={idx}
-                      className="flex items-center gap-2 p-3 bg-zinc-800/50 rounded-lg border border-zinc-700"
-                    >
-                      <span className="w-6 h-6 flex items-center justify-center bg-emerald-900/50 text-emerald-400 rounded text-xs font-bold">
-                        {idx + 1}
-                      </span>
-                      <span className="text-zinc-200 text-sm">{theme}</span>
+              {/* Theme - New structured model */}
+              {config.theme ? (
+                <section>
+                  <h3 className="text-xs font-bold text-emerald-400 uppercase tracking-wide mb-3">Theme</h3>
+                  <div className="space-y-3">
+                    {/* Core Theme Statement */}
+                    <div className="p-4 bg-emerald-900/10 rounded-lg border border-emerald-900/30">
+                      <p className="text-[10px] text-emerald-400 uppercase tracking-wide mb-2 font-bold">
+                        The Story Argues
+                      </p>
+                      <p className="text-zinc-100 leading-relaxed italic">"{config.theme.core}"</p>
                     </div>
-                  ))}
-                </div>
-              </section>
+                    {/* Counter-Argument */}
+                    <div className="p-4 bg-red-900/10 rounded-lg border border-red-900/30">
+                      <p className="text-[10px] text-red-400 uppercase tracking-wide mb-2 font-bold">
+                        The Counter-Argument
+                      </p>
+                      <p className="text-zinc-300 leading-relaxed italic">"{config.theme.counterArgument}"</p>
+                    </div>
+                  </div>
+                </section>
+              ) : config.themes && config.themes.length > 0 ? (
+                /* Legacy themes display for backwards compatibility */
+                <section>
+                  <h3 className="text-xs font-bold text-emerald-400 uppercase tracking-wide mb-2">
+                    Themes ({config.themes.length})
+                    <span className="text-zinc-500 font-normal ml-2">(legacy format)</span>
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    {config.themes.map((theme, idx) => (
+                      <div
+                        key={idx}
+                        className="flex items-center gap-2 p-3 bg-zinc-800/50 rounded-lg border border-zinc-700"
+                      >
+                        <span className="w-6 h-6 flex items-center justify-center bg-emerald-900/50 text-emerald-400 rounded text-xs font-bold">
+                          {idx + 1}
+                        </span>
+                        <span className="text-zinc-200 text-sm">{theme}</span>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              ) : null}
+
+              {/* Motifs */}
+              {config.motifs && config.motifs.length > 0 && (
+                <section>
+                  <h3 className="text-xs font-bold text-cyan-400 uppercase tracking-wide mb-2">
+                    Recurring Motifs
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {config.motifs.map((motif, idx) => (
+                      <span
+                        key={idx}
+                        className="px-3 py-1.5 bg-cyan-900/20 text-cyan-300 rounded-full text-sm border border-cyan-700/30"
+                      >
+                        {motif}
+                      </span>
+                    ))}
+                  </div>
+                </section>
+              )}
 
               {/* Tracking Categories */}
               {config.trackingCategories && config.trackingCategories.length > 0 && (

@@ -47,6 +47,9 @@ export interface SceneConnection {
   description: string;
 }
 
+/** Scene workflow status */
+export type SceneStatus = 'draft' | 'review' | 'polished' | 'locked';
+
 export interface Scene {
   id: string;
   sequenceId: string;
@@ -62,6 +65,8 @@ export interface Scene {
   connections?: SceneConnection[];
   location?: string;
   timeOfDay?: 'DAY' | 'NIGHT' | 'DAWN' | 'DUSK' | 'CONTINUOUS';
+  /** Workflow status for tracking progress */
+  status?: SceneStatus;
 }
 
 export interface Sequence {
@@ -144,6 +149,21 @@ export interface AIConfig {
   customInstructions?: string;
 }
 
+// =============================================================================
+// THEME MODEL
+// =============================================================================
+
+/**
+ * A proper theme is a complete moral argument, not a single word.
+ * Every story argues for one position while considering its counter-argument.
+ */
+export interface ThemeStatement {
+  /** The story's central moral argument (e.g., "Control destroys what makes life worth living") */
+  core: string;
+  /** The opposing position the story considers (e.g., "Without control, chaos destroys everything") */
+  counterArgument: string;
+}
+
 export interface ProjectConfig {
   /** Unique project identifier (kebab-case) */
   id: string;
@@ -157,8 +177,15 @@ export interface ProjectConfig {
   logline: string;
   /** Character roster */
   characters: CharacterConfig[];
-  /** Central themes to track */
-  themes: string[];
+  /**
+   * @deprecated Use `theme` (ThemeStatement) instead.
+   * Kept for backwards compatibility during migration.
+   */
+  themes?: string[];
+  /** The story's central moral argument and its counter-position */
+  theme?: ThemeStatement;
+  /** Recurring visual/symbolic elements that reinforce the theme */
+  motifs?: string[];
   /** AI behavior configuration */
   ai?: AIConfig;
   /** Tracking categories used in this project */

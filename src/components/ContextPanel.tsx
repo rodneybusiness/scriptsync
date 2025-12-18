@@ -4,7 +4,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useProject } from '../config/ProjectContext';
-import { Scene, NoteType, BoneyardItem, RewriteGoal, RewriteStatus, RewritePriority } from '../config/types';
+import { Scene, NoteType, BoneyardItem, RewriteStatus, RewritePriority } from '../config/types';
 import {
   analyzeSceneGap,
   chatWithScriptDoctor,
@@ -30,8 +30,7 @@ interface ContextPanelProps {
 enum Tab {
   BEATS = 'Beats',
   NOTES = 'Notes',
-  FEEDBACK = 'Studio',
-  GOALS = 'Goals',
+  PASSES = 'Passes',
   CONTINUITY = 'Track',
   BONEYARD = 'Cuts',
   DOCTOR = 'AI'
@@ -161,16 +160,7 @@ const ContextPanel: React.FC<ContextPanelProps> = ({ scene, allScenes, boneyard,
     });
   }, [rewriteData, scene.sequenceId]);
 
-  // Status label helpers for Goals display
-  const getStatusStyle = (status: RewriteStatus) => {
-    switch (status) {
-      case '🔴 REBREAK': return 'text-red-400 bg-red-500/20 border-red-500/30';
-      case '🟡 POLISH': return 'text-yellow-400 bg-yellow-500/20 border-yellow-500/30';
-      case '🟠 REWORK': return 'text-orange-400 bg-orange-500/20 border-orange-500/30';
-      default: return 'text-zinc-400 bg-zinc-500/20 border-zinc-500/30';
-    }
-  };
-
+  // Status label helpers for Passes display
   const getPriorityStyle = (priority: RewritePriority) => {
     switch (priority) {
       case 'CRITICAL': return 'text-red-500 bg-red-600/20 border-red-600/40';
@@ -387,27 +377,60 @@ const ContextPanel: React.FC<ContextPanelProps> = ({ scene, allScenes, boneyard,
           </div>
         )}
 
-        {/* SCENE NOTES TAB */}
+        {/* NOTES TAB - Scene notes + Studio feedback combined */}
         {activeTab === Tab.NOTES && (
           <div className="space-y-3">
-            <h3 className="text-sm font-bold text-zinc-100 mb-2">Scene Notes</h3>
-            <p className="text-xs text-zinc-500 mb-3">Author annotations for this scene</p>
-            {scene.notes.length === 0 ? (
+            <h3 className="text-sm font-bold text-zinc-100 mb-2">Notes</h3>
+
+            {/* Scene Notes Section */}
+            {scene.notes.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-[10px] text-zinc-500 uppercase tracking-wide">Scene Notes</p>
+                {scene.notes.map((note) => (
+                  <div key={note.id} className={`p-3 rounded border ${getNoteColor(note.type)}`}>
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-xs font-bold">{note.author}</span>
+                      <span className="text-[10px] uppercase opacity-70 border px-1 rounded border-current">{note.type}</span>
+                    </div>
+                    <p className="text-sm leading-relaxed opacity-90">{note.content}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* External Feedback Section */}
+            {(relevantPageNotes.amazon.length > 0 || relevantPageNotes.pointGrey.length > 0) && (
+              <div className="space-y-2 pt-3 border-t border-zinc-800">
+                <p className="text-[10px] text-zinc-500 uppercase tracking-wide">External Feedback (Page {scene.pageNumber || 'N/A'})</p>
+                {relevantPageNotes.amazon.map((item, idx) => (
+                  <div key={`amazon-${idx}`} className="p-3 rounded border bg-orange-900/10 border-orange-800/30">
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-xs font-bold text-orange-400">Amazon</span>
+                      <span className="text-[10px] text-orange-400/70">{item.page}</span>
+                    </div>
+                    <p className="text-sm text-zinc-300 leading-relaxed">{item.note}</p>
+                  </div>
+                ))}
+                {relevantPageNotes.pointGrey.map((item, idx) => (
+                  <div key={`pg-${idx}`} className="p-3 rounded border bg-purple-900/10 border-purple-800/30">
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-xs font-bold text-purple-400">Point Grey</span>
+                      <span className="text-[10px] text-purple-400/70">{item.page}</span>
+                    </div>
+                    <p className="text-sm text-zinc-300 leading-relaxed">{item.note}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Empty state */}
+            {scene.notes.length === 0 && relevantPageNotes.amazon.length === 0 && relevantPageNotes.pointGrey.length === 0 && (
               <p className="text-xs text-zinc-600 italic p-3 bg-zinc-900/50 rounded border border-zinc-800">
                 No notes for this scene yet.
               </p>
-            ) : (
-              scene.notes.map((note) => (
-                <div key={note.id} className={`p-3 rounded border ${getNoteColor(note.type)}`}>
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="text-xs font-bold">{note.author}</span>
-                    <span className="text-[10px] uppercase opacity-70 border px-1 rounded border-current">{note.type}</span>
-                  </div>
-                  <p className="text-sm leading-relaxed opacity-90">{note.content}</p>
-                </div>
-              ))
             )}
 
+            {/* AI Analysis */}
             <button
               onClick={handleAnalyze}
               disabled={isAnalyzing}
@@ -424,53 +447,17 @@ const ContextPanel: React.FC<ContextPanelProps> = ({ scene, allScenes, boneyard,
           </div>
         )}
 
-        {/* FEEDBACK TAB - Studio notes from Amazon/Point Grey */}
-        {activeTab === Tab.FEEDBACK && (
+        {/* PASSES TAB - Rewrite passes relevant to this scene/act */}
+        {activeTab === Tab.PASSES && (
           <div className="space-y-3">
-            <h3 className="text-sm font-bold text-zinc-100 mb-2">Studio Feedback</h3>
-            <p className="text-xs text-zinc-500 mb-3">External notes relevant to page {scene.pageNumber || 'N/A'}</p>
-
-            {relevantPageNotes.amazon.length === 0 && relevantPageNotes.pointGrey.length === 0 ? (
-              <p className="text-xs text-zinc-600 italic p-3 bg-zinc-900/50 rounded border border-zinc-800">
-                No studio feedback for this page.
-              </p>
-            ) : (
-              <>
-                {relevantPageNotes.amazon.map((item, idx) => (
-                  <div key={`amazon-${idx}`} className="p-3 rounded border bg-orange-900/10 border-orange-800/30">
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="text-xs font-bold text-orange-400">Amazon</span>
-                      <span className="text-[10px] text-orange-400/70">{item.page}</span>
-                    </div>
-                    <p className="text-sm text-zinc-300 leading-relaxed">{item.note}</p>
-                  </div>
-                ))}
-
-                {relevantPageNotes.pointGrey.map((item, idx) => (
-                  <div key={`pg-${idx}`} className="p-3 rounded border bg-purple-900/10 border-purple-800/30">
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="text-xs font-bold text-purple-400">Point Grey</span>
-                      <span className="text-[10px] text-purple-400/70">{item.page}</span>
-                    </div>
-                    <p className="text-sm text-zinc-300 leading-relaxed">{item.note}</p>
-                  </div>
-                ))}
-              </>
-            )}
-          </div>
-        )}
-
-        {/* GOALS TAB - Rewrite goals relevant to this scene/act */}
-        {activeTab === Tab.GOALS && (
-          <div className="space-y-3">
-            <h3 className="text-sm font-bold text-zinc-100 mb-2">Rewrite Goals</h3>
+            <h3 className="text-sm font-bold text-zinc-100 mb-2">Rewrite Passes</h3>
             <p className="text-xs text-zinc-500 mb-3">
-              Goals affecting {scene.sequenceId ? `Sequence ${scene.sequenceId.replace('SEQ_', '')}` : 'this scene'}
+              Passes affecting {scene.sequenceId ? `Sequence ${scene.sequenceId.replace('SEQ_', '')}` : 'this scene'}
             </p>
 
             {relevantGoals.length === 0 ? (
               <p className="text-xs text-zinc-600 italic p-3 bg-zinc-900/50 rounded border border-zinc-800">
-                No rewrite goals affect this section.
+                No rewrite passes affect this section.
               </p>
             ) : (
               relevantGoals.map((goal) => (
@@ -519,47 +506,10 @@ const ContextPanel: React.FC<ContextPanelProps> = ({ scene, allScenes, boneyard,
           </div>
         )}
 
-        {/* CONTINUITY TAB */}
+        {/* CONTINUITY TAB - Scene tracking and continuity checks */}
         {activeTab === Tab.CONTINUITY && (
           <div className="space-y-4">
-            {/* Project Themes Section */}
-            {config.themes && config.themes.length > 0 && (
-              <div className="p-3 bg-gradient-to-b from-emerald-900/10 to-transparent rounded-lg border border-emerald-900/30">
-                <h4 className="text-xs font-bold text-emerald-400 uppercase tracking-wide mb-2">Project Themes</h4>
-                <div className="flex flex-wrap gap-1.5">
-                  {config.themes.map((theme, idx) => (
-                    <span
-                      key={idx}
-                      className="px-2 py-1 bg-emerald-900/20 text-emerald-300 text-[10px] rounded-full border border-emerald-700/30"
-                    >
-                      {theme}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* AI Constraints Preview */}
-            {config.ai?.uniqueConstraints && config.ai.uniqueConstraints.length > 0 && (
-              <div className="p-3 bg-gradient-to-b from-red-900/10 to-transparent rounded-lg border border-red-900/30">
-                <h4 className="text-xs font-bold text-red-400 uppercase tracking-wide mb-2">Story Constraints</h4>
-                <div className="space-y-1.5">
-                  {config.ai.uniqueConstraints.slice(0, 3).map((constraint, idx) => (
-                    <p key={idx} className="text-[10px] text-zinc-400 leading-relaxed">
-                      <span className="text-red-400 font-bold mr-1">•</span>
-                      {constraint}
-                    </p>
-                  ))}
-                  {config.ai.uniqueConstraints.length > 3 && (
-                    <p className="text-[10px] text-zinc-600 italic">
-                      +{config.ai.uniqueConstraints.length - 3} more constraints
-                    </p>
-                  )}
-                </div>
-              </div>
-            )}
-
-            <h3 className="text-sm font-bold text-zinc-100 mb-2 pt-2 border-t border-zinc-800">Scene Tracking</h3>
+            <h3 className="text-sm font-bold text-zinc-100 mb-2">Scene Tracking</h3>
             {scene.tracking.map((item, idx) => (
               <div key={idx} className="group">
                 <h4 className="text-xs font-semibold text-zinc-500 uppercase mb-1 group-hover:text-zinc-300 transition">{item.category}</h4>

@@ -2,12 +2,36 @@
  * Navigation - Scene browser sidebar
  *
  * Uses project context for sequences - no hard-coded data.
+ * Features: scene badges, quick filters, page estimates, status indicators
  */
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useProject } from '../config/ProjectContext';
-import { Scene } from '../config/types';
+import { Scene, SceneStatus } from '../config/types';
 import { calculatePacingScore, getPacingColor } from '../services/scriptUtils';
+
+/** Quick filter options */
+type FilterMode = 'all' | 'has-notes' | 'incomplete-beats' | 'needs-work';
+
+/** Estimate pages from script content (industry standard: ~1 page per minute, ~250 words) */
+const estimatePages = (content: string): number => {
+  const words = content.split(/\s+/).filter(Boolean).length;
+  return Math.max(0.5, Math.round((words / 250) * 2) / 2); // Round to nearest 0.5
+};
+
+/** Get status badge styling */
+const getStatusStyle = (status?: SceneStatus): { bg: string; text: string; label: string } => {
+  switch (status) {
+    case 'locked':
+      return { bg: 'bg-emerald-900/40', text: 'text-emerald-400', label: 'Locked' };
+    case 'polished':
+      return { bg: 'bg-blue-900/40', text: 'text-blue-400', label: 'Polished' };
+    case 'review':
+      return { bg: 'bg-amber-900/40', text: 'text-amber-400', label: 'Review' };
+    default:
+      return { bg: 'bg-zinc-800/40', text: 'text-zinc-500', label: 'Draft' };
+  }
+};
 
 interface NavigationProps {
   currentSceneId: string;
@@ -17,21 +41,49 @@ interface NavigationProps {
 const Navigation: React.FC<NavigationProps> = ({ currentSceneId, onSelectScene }) => {
   const { config, sequences } = useProject();
   const [searchQuery, setSearchQuery] = useState('');
+  const [filterMode, setFilterMode] = useState<FilterMode>('all');
 
-  // Filter Logic
-  const filteredData = sequences.map(seq => ({
-    ...seq,
-    scenes: seq.scenes.filter(scene => {
-      if (!searchQuery) return true;
-      const q = searchQuery.toLowerCase();
-      return (
-        scene.title.toLowerCase().includes(q) ||
-        scene.summary.toLowerCase().includes(q) ||
-        scene.scriptContent.toLowerCase().includes(q) ||
-        scene.id.includes(q)
-      );
-    })
-  })).filter(seq => seq.scenes.length > 0);
+  // Calculate totals for header stats
+  const allScenes = useMemo(() => sequences.flatMap(s => s.scenes), [sequences]);
+  const totalPages = useMemo(() =>
+    allScenes.reduce((sum, s) => sum + estimatePages(s.scriptContent), 0),
+    [allScenes]
+  );
+  const totalNotes = useMemo(() =>
+    allScenes.reduce((sum, s) => sum + s.notes.length, 0),
+    [allScenes]
+  );
+
+  // Filter Logic - search + quick filters
+  const filteredData = useMemo(() => {
+    return sequences.map(seq => ({
+      ...seq,
+      scenes: seq.scenes.filter(scene => {
+        // Text search
+        if (searchQuery) {
+          const q = searchQuery.toLowerCase();
+          const matchesSearch =
+            scene.title.toLowerCase().includes(q) ||
+            scene.summary.toLowerCase().includes(q) ||
+            scene.scriptContent.toLowerCase().includes(q) ||
+            scene.id.includes(q);
+          if (!matchesSearch) return false;
+        }
+
+        // Quick filters
+        switch (filterMode) {
+          case 'has-notes':
+            return scene.notes.length > 0;
+          case 'incomplete-beats':
+            return scene.beats.some(b => !b.completed);
+          case 'needs-work':
+            return !scene.status || scene.status === 'draft' || scene.status === 'review';
+          default:
+            return true;
+        }
+      })
+    })).filter(seq => seq.scenes.length > 0);
+  }, [sequences, searchQuery, filterMode]);
 
   return (
     <div
@@ -40,6 +92,25 @@ const Navigation: React.FC<NavigationProps> = ({ currentSceneId, onSelectScene }
       <div className="p-4 border-b border-zinc-800">
         <h1 className="text-lg font-bold text-zinc-100 tracking-tight">ScriptSync</h1>
         <p className="text-xs text-zinc-500 uppercase tracking-wider mt-1">{config.title}</p>
+
+        {/* Project Stats Bar */}
+        <div className="flex items-center gap-3 mt-2 text-[10px] text-zinc-500">
+          <span title="Estimated pages">
+            <span className="text-zinc-400 font-medium">{totalPages}</span> pgs
+          </span>
+          <span className="text-zinc-700">|</span>
+          <span title="Total scenes">
+            <span className="text-zinc-400 font-medium">{allScenes.length}</span> scenes
+          </span>
+          {totalNotes > 0 && (
+            <>
+              <span className="text-zinc-700">|</span>
+              <span title="Total notes">
+                <span className="text-amber-400 font-medium">{totalNotes}</span> notes
+              </span>
+            </>
+          )}
+        </div>
 
         {/* Genre Tags */}
         {config.genres && config.genres.length > 0 && (
@@ -67,6 +138,28 @@ const Navigation: React.FC<NavigationProps> = ({ currentSceneId, onSelectScene }
           <svg className="w-3 h-3 text-zinc-500 absolute left-2.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
+        </div>
+
+        {/* Quick Filters */}
+        <div className="flex flex-wrap gap-1 mt-2">
+          {[
+            { key: 'all' as FilterMode, label: 'All' },
+            { key: 'has-notes' as FilterMode, label: 'Has Notes' },
+            { key: 'incomplete-beats' as FilterMode, label: 'Incomplete' },
+            { key: 'needs-work' as FilterMode, label: 'Needs Work' },
+          ].map(({ key, label }) => (
+            <button
+              key={key}
+              onClick={() => setFilterMode(key)}
+              className={`px-2 py-0.5 text-[9px] rounded transition ${
+                filterMode === key
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-zinc-800 text-zinc-500 hover:text-zinc-300'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
         </div>
 
         {/* Style References (if any) */}
@@ -108,6 +201,10 @@ const Navigation: React.FC<NavigationProps> = ({ currentSceneId, onSelectScene }
                 {seq.scenes.map((scene) => {
                   const pacingScore = calculatePacingScore(scene.scriptContent);
                   const pacingColor = getPacingColor(pacingScore);
+                  const pages = estimatePages(scene.scriptContent);
+                  const completedBeats = scene.beats.filter(b => b.completed).length;
+                  const totalBeats = scene.beats.length;
+                  const statusStyle = getStatusStyle(scene.status);
 
                   return (
                     <button
@@ -123,9 +220,53 @@ const Navigation: React.FC<NavigationProps> = ({ currentSceneId, onSelectScene }
                       <div className={`absolute left-0 top-2 bottom-2 w-0.5 rounded-full opacity-50 group-hover:opacity-100 transition ${pacingColor} ${currentSceneId === scene.id ? 'opacity-100' : ''}`}></div>
 
                       <div className="flex items-center justify-between pl-2">
-                        <span className="truncate text-xs font-medium">
+                        <span className="truncate text-xs font-medium flex-1">
                           {scene.id} <span className={currentSceneId === scene.id ? 'text-blue-400' : 'text-zinc-500'}>|</span> {scene.title.split(':')[1] || scene.title}
                         </span>
+
+                        {/* Scene Badges - compact row */}
+                        <div className="flex items-center gap-1.5 ml-2 shrink-0">
+                          {/* Page estimate */}
+                          <span className="text-[9px] text-zinc-600" title={`${pages} page${pages !== 1 ? 's' : ''}`}>
+                            {pages}p
+                          </span>
+
+                          {/* Notes badge */}
+                          {scene.notes.length > 0 && (
+                            <span
+                              className="w-4 h-4 flex items-center justify-center bg-amber-900/40 text-amber-400 text-[9px] rounded-full"
+                              title={`${scene.notes.length} note${scene.notes.length !== 1 ? 's' : ''}`}
+                            >
+                              {scene.notes.length}
+                            </span>
+                          )}
+
+                          {/* Beats progress */}
+                          {totalBeats > 0 && (
+                            <span
+                              className={`text-[9px] ${
+                                completedBeats === totalBeats
+                                  ? 'text-emerald-400'
+                                  : completedBeats > 0
+                                    ? 'text-amber-400'
+                                    : 'text-zinc-600'
+                              }`}
+                              title={`${completedBeats}/${totalBeats} beats complete`}
+                            >
+                              {completedBeats}/{totalBeats}
+                            </span>
+                          )}
+
+                          {/* Status indicator */}
+                          {scene.status && scene.status !== 'draft' && (
+                            <span
+                              className={`px-1 py-0.5 text-[8px] rounded ${statusStyle.bg} ${statusStyle.text}`}
+                              title={statusStyle.label}
+                            >
+                              {scene.status === 'locked' ? '✓' : scene.status === 'polished' ? '◆' : '○'}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </button>
                   );
