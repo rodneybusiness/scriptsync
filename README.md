@@ -64,6 +64,18 @@ npm run dev
 
 Open http://localhost:5173 in your browser.
 
+### Creating a New Project
+
+Three ways to get started:
+
+| Method | Best For |
+|--------|----------|
+| **Start Fresh** | New screenplay from scratch. Enter title and genre, start writing immediately. |
+| **Import Screenplay** | Existing PDF, Fountain, or text files. Auto-detects scenes and characters. |
+| **JSON Import** | Projects developed with AI tools (Claude, ChatGPT). See [claude-prompt-template.md](docs/claude-prompt-template.md). |
+
+After creating a project, use **Project Settings** (`Cmd/Ctrl + ,`) to add characters, define themes, and configure AI preferences.
+
 ---
 
 ## Project Setup Guide
@@ -231,6 +243,28 @@ For best results, ensure your project has:
 
 ## AI Features
 
+### Quick AI Actions
+
+The AI tab includes one-click actions for common operations:
+
+| Action | Description |
+|--------|-------------|
+| **Analyze Scene** | Gap analysis checking beats, pacing, and dialogue |
+| **Check Continuity** | Scan for timeline issues, logic errors, missing setup/payoff |
+| **Alt Versions** | Generate 3 different versions of the current beat |
+| **Write Dialogue** | Opens the dialogue generator with character/intent inputs |
+
+Results appear inline and can be saved to the Boneyard for later use.
+
+### Suggestion Chips
+
+When starting a chat, click suggestion chips for common questions:
+- Scene pacing
+- Character voice
+- Subtext analysis
+- Emotional arc
+- Setup/payoff tracking
+
 ### Scene Gap Analysis
 
 Analyzes your scene against:
@@ -255,13 +289,14 @@ When a beat isn't working, get alternatives that:
 - Explore different emotional tones
 - Suggest structural variations
 
-### Chat Assistant
+### Chat Assistant (Script Doctor)
 
 Context-aware chat that knows:
 - Your entire project structure
 - Character relationships
 - Story themes and constraints
 - Current scene context
+- Session corrections (learns from your feedback)
 
 ---
 
@@ -272,6 +307,7 @@ Context-aware chat that knows:
 | Shortcut | Action |
 |----------|--------|
 | `?` | Show keyboard shortcuts |
+| `Ctrl/Cmd + ,` | Open Project Settings |
 | `Escape` | Close modal/panel |
 | `Ctrl/Cmd + S` | Save current changes |
 | `Ctrl/Cmd + Z` | Undo |

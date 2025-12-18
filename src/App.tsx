@@ -31,6 +31,7 @@ const BeatBoard = lazy(() => import('./components/BeatBoard'));
 const ExportModal = lazy(() => import('./components/ExportModal'));
 const ProjectOverview = lazy(() => import('./components/ProjectOverview'));
 const RewriteTracker = lazy(() => import('./components/RewriteTracker'));
+const ProjectSettings = lazy(() => import('./components/ProjectSettings'));
 
 type ViewMode = 'script' | 'timeline' | 'characters' | 'board' | 'tracker';
 
@@ -39,7 +40,7 @@ interface AppProps {
 }
 
 const App: React.FC<AppProps> = ({ onBackToProjects }) => {
-  const { config, sequences, setSequences, hasRewriteData } = useProject();
+  const { config, sequences, setSequences, hasRewriteData, updateConfig } = useProject();
 
   const allScenes = useMemo(() => sequences.flatMap(s => s.scenes), [sequences]);
 
@@ -48,6 +49,7 @@ const App: React.FC<AppProps> = ({ onBackToProjects }) => {
   const [boneyard, setBoneyard] = useState<BoneyardItem[]>([]);
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [isProjectOverviewOpen, setIsProjectOverviewOpen] = useState(false);
+  const [isProjectSettingsOpen, setIsProjectSettingsOpen] = useState(false);
 
   // Column layout management
   const {
@@ -170,6 +172,7 @@ const App: React.FC<AppProps> = ({ onBackToProjects }) => {
           sequenceId={currentScene.sequenceId}
           onOpenInfo={() => setIsProjectOverviewOpen(true)}
           onOpenExport={() => setIsExportOpen(true)}
+          onOpenSettings={() => setIsProjectSettingsOpen(true)}
           onBackToProjects={onBackToProjects}
           onResetLayout={viewMode === 'script' ? resetLayout : undefined}
           hasRewriteData={hasRewriteData}
@@ -292,6 +295,26 @@ const App: React.FC<AppProps> = ({ onBackToProjects }) => {
             </div>
           }>
             <ProjectOverview isOpen={isProjectOverviewOpen} onClose={() => setIsProjectOverviewOpen(false)} />
+          </Suspense>
+        )}
+
+        {/* Project Settings Modal */}
+        {isProjectSettingsOpen && (
+          <Suspense fallback={
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+              <div className="bg-zinc-900 rounded-lg p-8">
+                <Spinner size="lg" />
+              </div>
+            </div>
+          }>
+            <ProjectSettings
+              config={config}
+              onSave={(updates) => {
+                updateConfig(updates);
+                setIsProjectSettingsOpen(false);
+              }}
+              onClose={() => setIsProjectSettingsOpen(false)}
+            />
           </Suspense>
         )}
         </main>

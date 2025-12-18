@@ -8,7 +8,7 @@
  * with a toggle, but the default is single-timeline structural view.
  */
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useProject } from '../config/ProjectContext';
 import { Scene, Sequence } from '../config/types';
 
@@ -36,6 +36,7 @@ const getActForSequence = (seqIndex: number, totalSequences: number): 1 | 2 | 3 
 
 const TimelineView: React.FC<TimelineViewProps> = ({ onSelectScene, scriptData }) => {
   const { config } = useProject();
+  const [hoveredSceneId, setHoveredSceneId] = useState<string | null>(null);
 
   // Flatten scenes with sequence info
   const scenesWithMeta = useMemo(() => {
@@ -94,6 +95,34 @@ const TimelineView: React.FC<TimelineViewProps> = ({ onSelectScene, scriptData }
     scenesWithMeta.reduce((sum, s) => sum + s.pages, 0),
     [scenesWithMeta]
   );
+
+  // Compute connected scene IDs for hover highlighting
+  const connectedSceneIds = useMemo(() => {
+    if (!hoveredSceneId) return new Set<string>();
+
+    const connected = new Set<string>();
+    const hoveredScene = scenesWithMeta.find(s => s.id === hoveredSceneId);
+
+    // Add scenes this scene connects TO
+    if (hoveredScene?.connections) {
+      hoveredScene.connections.forEach(conn => {
+        connected.add(conn.targetSceneId);
+      });
+    }
+
+    // Add scenes that connect TO this scene (incoming connections)
+    scenesWithMeta.forEach(scene => {
+      if (scene.connections) {
+        scene.connections.forEach(conn => {
+          if (conn.targetSceneId === hoveredSceneId) {
+            connected.add(scene.id);
+          }
+        });
+      }
+    });
+
+    return connected;
+  }, [hoveredSceneId, scenesWithMeta]);
 
   // Colors for acts
   const actColors = {
@@ -227,17 +256,41 @@ const TimelineView: React.FC<TimelineViewProps> = ({ onSelectScene, scriptData }
                     conn.type === 'foreshadow' ? '#34d399' :
                     '#a78bfa';
 
+                  // Check if this connection should be highlighted
+                  const isHighlighted = hoveredSceneId === scene.id || hoveredSceneId === conn.targetSceneId;
+                  const isDimmed = hoveredSceneId && !isHighlighted;
+
                   return (
-                    <g key={`${scene.id}-${conn.targetSceneId}-${connIdx}`}>
+                    <g
+                      key={`${scene.id}-${conn.targetSceneId}-${connIdx}`}
+                      className={`transition-all duration-200 ${isDimmed ? 'opacity-10' : ''}`}
+                    >
                       <path
                         d={`M ${startX} ${startY} Q ${startX} ${(startY + endY) / 2}, ${(startX + endX) / 2} ${(startY + endY) / 2} T ${endX} ${endY}`}
                         fill="none"
                         stroke={strokeColor}
-                        strokeWidth="1.5"
-                        strokeDasharray="4,4"
-                        className="opacity-30"
+                        strokeWidth={isHighlighted ? 3 : 1.5}
+                        strokeDasharray={isHighlighted ? "0" : "4,4"}
+                        className={isHighlighted ? 'opacity-90' : 'opacity-30'}
                       />
-                      <circle cx={endX} cy={endY} r="3" fill={strokeColor} className="opacity-50" />
+                      <circle
+                        cx={endX}
+                        cy={endY}
+                        r={isHighlighted ? 5 : 3}
+                        fill={strokeColor}
+                        className={isHighlighted ? 'opacity-100' : 'opacity-50'}
+                      />
+                      {/* Glow effect for highlighted connections */}
+                      {isHighlighted && (
+                        <path
+                          d={`M ${startX} ${startY} Q ${startX} ${(startY + endY) / 2}, ${(startX + endX) / 2} ${(startY + endY) / 2} T ${endX} ${endY}`}
+                          fill="none"
+                          stroke={strokeColor}
+                          strokeWidth="6"
+                          className="opacity-20"
+                          filter="blur(3px)"
+                        />
+                      )}
                     </g>
                   );
                 });
@@ -250,19 +303,36 @@ const TimelineView: React.FC<TimelineViewProps> = ({ onSelectScene, scriptData }
                 const colors = actColors[scene.act];
                 const hasConnections = scene.connections && scene.connections.length > 0;
 
+                // Determine if this scene is highlighted or dimmed
+                const isHovered = hoveredSceneId === scene.id;
+                const isConnected = connectedSceneIds.has(scene.id);
+                const isDimmed = hoveredSceneId && !isHovered && !isConnected;
+
                 return (
                   <div
                     key={scene.id}
                     onClick={() => onSelectScene(scene)}
-                    className={`${colors.bg} ${colors.border} border rounded-lg p-2 cursor-pointer transition-all hover:scale-105 hover:z-20 hover:shadow-lg group relative`}
+                    onMouseEnter={() => setHoveredSceneId(scene.id)}
+                    onMouseLeave={() => setHoveredSceneId(null)}
+                    className={`
+                      ${colors.bg} ${colors.border} border rounded-lg p-2 cursor-pointer transition-all group relative
+                      ${isHovered ? 'scale-110 z-20 shadow-xl ring-2 ring-white/30' : 'hover:scale-105 hover:z-20 hover:shadow-lg'}
+                      ${isConnected ? 'scale-105 z-15 shadow-lg ring-2 ring-purple-500/50' : ''}
+                      ${isDimmed ? 'opacity-30' : ''}
+                    `}
                   >
                     {/* Connection indicator */}
                     {hasConnections && (
-                      <div className="absolute -top-1 -right-1 w-2 h-2 bg-purple-500 rounded-full" />
+                      <div className={`absolute -top-1 -right-1 w-2 h-2 bg-purple-500 rounded-full transition-transform ${isHovered ? 'scale-150' : ''}`} />
+                    )}
+
+                    {/* Connected indicator (shows when this scene is connected to hovered scene) */}
+                    {isConnected && !isHovered && (
+                      <div className="absolute -top-1 -left-1 w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
                     )}
 
                     <div className="text-[9px] font-mono text-zinc-500 mb-1">{scene.id}</div>
-                    <div className={`text-[10px] font-medium ${colors.text} line-clamp-2 leading-tight mb-1`}>
+                    <div className={`text-[10px] font-medium ${isConnected && !isHovered ? 'text-purple-300' : colors.text} line-clamp-2 leading-tight mb-1`}>
                       {scene.title.split(':').pop()?.trim() || scene.title}
                     </div>
                     <div className="text-[9px] text-zinc-600">

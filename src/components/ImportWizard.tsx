@@ -23,6 +23,7 @@ import { ProjectData } from '../config/types';
 // =============================================================================
 
 type WizardStep = 'upload' | 'configure' | 'processing' | 'review' | 'complete';
+type UploadTab = 'files' | 'json';
 
 interface ImportWizardProps {
   onComplete: (projectData: ProjectData) => void;
@@ -61,6 +62,9 @@ const ImportWizard: React.FC<ImportWizardProps> = ({ onComplete, onCancel }) => 
   const [result, setResult] = useState<ProjectData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [uploadTab, setUploadTab] = useState<UploadTab>('files');
+  const [jsonInput, setJsonInput] = useState('');
+  const [jsonError, setJsonError] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -111,6 +115,60 @@ const ImportWizard: React.FC<ImportWizardProps> = ({ onComplete, onCancel }) => 
 
   const removeDocument = (id: string) => {
     setDocuments(prev => prev.filter(d => d.id !== id));
+  };
+
+  // ===================
+  // JSON IMPORT
+  // ===================
+
+  const validateJsonProject = (data: unknown): data is ProjectData => {
+    if (typeof data !== 'object' || data === null) return false;
+    const obj = data as Record<string, unknown>;
+
+    // Check required top-level structure
+    if (!obj.config || typeof obj.config !== 'object') return false;
+    if (!obj.sequences || !Array.isArray(obj.sequences)) return false;
+
+    // Check config has required fields
+    const config = obj.config as Record<string, unknown>;
+    if (!config.id || typeof config.id !== 'string') return false;
+    if (!config.title || typeof config.title !== 'string') return false;
+
+    return true;
+  };
+
+  const handleJsonImport = () => {
+    setJsonError(null);
+
+    if (!jsonInput.trim()) {
+      setJsonError('Please paste a ScriptSync project JSON');
+      return;
+    }
+
+    try {
+      const parsed = JSON.parse(jsonInput);
+
+      if (!validateJsonProject(parsed)) {
+        setJsonError('Invalid project format. Expected ScriptSync project structure with config and sequences.');
+        return;
+      }
+
+      // Generate new ID to avoid collisions
+      const importedProject: ProjectData = {
+        ...parsed,
+        config: {
+          ...parsed.config,
+          id: `imported-${Date.now()}`,
+          title: parsed.config.title + ' (imported)',
+        },
+      };
+
+      // Skip AI processing - go directly to complete
+      setResult(importedProject);
+      setStep('complete');
+    } catch {
+      setJsonError('Invalid JSON. Please check the format and try again.');
+    }
   };
 
   // ===================
@@ -210,96 +268,176 @@ const ImportWizard: React.FC<ImportWizardProps> = ({ onComplete, onCancel }) => 
         </p>
       </div>
 
-      {/* Drop Zone */}
-      <div
-        onDrop={handleDrop}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onClick={() => fileInputRef.current?.click()}
-        className={`border-2 border-dashed rounded-xl p-12 text-center cursor-pointer transition-all ${
-          isDragging
-            ? 'border-blue-500 bg-blue-500/10'
-            : 'border-zinc-700 hover:border-zinc-500 hover:bg-zinc-900/50'
-        }`}
-      >
-        <input
-          ref={fileInputRef}
-          type="file"
-          multiple
-          accept={ACCEPT_TYPES}
-          onChange={(e) => e.target.files && handleFiles(e.target.files)}
-          className="hidden"
-        />
-
-        <div className="text-5xl mb-4">{isDragging ? '📥' : '📁'}</div>
-        <p className="text-lg font-medium text-zinc-200 mb-2">
-          {isDragging ? 'Drop files here' : 'Drag & drop files or click to browse'}
-        </p>
-        <p className="text-sm text-zinc-500">
-          Supports: Fountain, Final Draft, PDF, CSV, Markdown, Scapple, and more
-        </p>
+      {/* Tab Switcher */}
+      <div className="flex bg-zinc-800/50 rounded-lg p-1 border border-zinc-700">
+        <button
+          onClick={() => setUploadTab('files')}
+          className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition ${
+            uploadTab === 'files'
+              ? 'bg-zinc-700 text-white'
+              : 'text-zinc-400 hover:text-zinc-200'
+          }`}
+        >
+          Upload Files
+        </button>
+        <button
+          onClick={() => setUploadTab('json')}
+          className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition ${
+            uploadTab === 'json'
+              ? 'bg-zinc-700 text-white'
+              : 'text-zinc-400 hover:text-zinc-200'
+          }`}
+        >
+          Paste JSON Export
+        </button>
       </div>
 
-      {/* Supported Formats Grid */}
-      <div className="grid grid-cols-4 gap-3">
-        {FILE_TYPES.map(ft => (
-          <div key={ft.ext} className="p-3 bg-zinc-900/50 rounded-lg border border-zinc-800 text-center">
-            <div className="text-2xl mb-1">{ft.icon}</div>
-            <div className="text-xs font-medium text-zinc-300">{ft.label}</div>
-            <div className="text-[10px] text-zinc-600">{ft.ext}</div>
+      {uploadTab === 'files' ? (
+        <>
+          {/* Drop Zone */}
+          <div
+            onDrop={handleDrop}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onClick={() => fileInputRef.current?.click()}
+            className={`border-2 border-dashed rounded-xl p-12 text-center cursor-pointer transition-all ${
+              isDragging
+                ? 'border-blue-500 bg-blue-500/10'
+                : 'border-zinc-700 hover:border-zinc-500 hover:bg-zinc-900/50'
+            }`}
+          >
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept={ACCEPT_TYPES}
+              onChange={(e) => e.target.files && handleFiles(e.target.files)}
+              className="hidden"
+            />
+
+            <div className="text-5xl mb-4">{isDragging ? '📥' : '📁'}</div>
+            <p className="text-lg font-medium text-zinc-200 mb-2">
+              {isDragging ? 'Drop files here' : 'Drag & drop files or click to browse'}
+            </p>
+            <p className="text-sm text-zinc-500">
+              Supports: Fountain, Final Draft, PDF, CSV, Markdown, Scapple, and more
+            </p>
           </div>
-        ))}
-      </div>
 
-      {/* Uploaded Files */}
-      {documents.length > 0 && (
-        <div className="space-y-2">
-          <h3 className="text-sm font-bold text-zinc-400 uppercase">Uploaded Documents</h3>
-          <div className="space-y-2 max-h-48 overflow-y-auto">
-            {documents.map(doc => (
-              <div
-                key={doc.id}
-                className="flex items-center justify-between p-3 bg-zinc-800/50 rounded-lg border border-zinc-700"
-              >
-                <div className="flex items-center gap-3">
-                  <span className="text-2xl">
-                    {FILE_TYPES.find(f => f.ext === `.${doc.type}`)?.icon || '📄'}
-                  </span>
-                  <div>
-                    <div className="text-sm font-medium text-zinc-200">{doc.name}</div>
-                    <div className="text-xs text-zinc-500">
-                      {doc.type.toUpperCase()} • {(doc.size / 1024).toFixed(1)} KB
-                    </div>
-                  </div>
-                </div>
-                <button
-                  onClick={() => removeDocument(doc.id)}
-                  className="p-2 hover:bg-zinc-700 rounded-lg transition"
-                >
-                  <span className="text-zinc-500 hover:text-red-400">✕</span>
-                </button>
+          {/* Supported Formats Grid */}
+          <div className="grid grid-cols-4 gap-3">
+            {FILE_TYPES.filter(ft => ft.ext !== '.json').map(ft => (
+              <div key={ft.ext} className="p-3 bg-zinc-900/50 rounded-lg border border-zinc-800 text-center">
+                <div className="text-2xl mb-1">{ft.icon}</div>
+                <div className="text-xs font-medium text-zinc-300">{ft.label}</div>
+                <div className="text-[10px] text-zinc-600">{ft.ext}</div>
               </div>
             ))}
           </div>
-        </div>
-      )}
 
-      {/* Next Button */}
-      <div className="flex justify-between pt-4">
-        <button
-          onClick={onCancel}
-          className="px-6 py-3 text-zinc-400 hover:text-white transition"
-        >
-          Cancel
-        </button>
-        <button
-          onClick={() => setStep('configure')}
-          disabled={documents.length === 0}
-          className="px-8 py-3 bg-blue-600 hover:bg-blue-500 disabled:bg-zinc-700 disabled:text-zinc-500 text-white font-bold rounded-lg transition"
-        >
-          Continue
-        </button>
-      </div>
+          {/* Uploaded Files */}
+          {documents.length > 0 && (
+            <div className="space-y-2">
+              <h3 className="text-sm font-bold text-zinc-400 uppercase">Uploaded Documents</h3>
+              <div className="space-y-2 max-h-48 overflow-y-auto">
+                {documents.map(doc => (
+                  <div
+                    key={doc.id}
+                    className="flex items-center justify-between p-3 bg-zinc-800/50 rounded-lg border border-zinc-700"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl">
+                        {FILE_TYPES.find(f => f.ext === `.${doc.type}`)?.icon || '📄'}
+                      </span>
+                      <div>
+                        <div className="text-sm font-medium text-zinc-200">{doc.name}</div>
+                        <div className="text-xs text-zinc-500">
+                          {doc.type.toUpperCase()} • {(doc.size / 1024).toFixed(1)} KB
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => removeDocument(doc.id)}
+                      className="p-2 hover:bg-zinc-700 rounded-lg transition"
+                    >
+                      <span className="text-zinc-500 hover:text-red-400">✕</span>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Next Button */}
+          <div className="flex justify-between pt-4">
+            <button
+              onClick={onCancel}
+              className="px-6 py-3 text-zinc-400 hover:text-white transition"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => setStep('configure')}
+              disabled={documents.length === 0}
+              className="px-8 py-3 bg-blue-600 hover:bg-blue-500 disabled:bg-zinc-700 disabled:text-zinc-500 text-white font-bold rounded-lg transition"
+            >
+              Continue
+            </button>
+          </div>
+        </>
+      ) : (
+        <>
+          {/* JSON Import */}
+          <div className="space-y-4">
+            <div className="p-4 bg-zinc-800/30 rounded-lg border border-zinc-700">
+              <div className="flex items-start gap-3">
+                <span className="text-2xl">💾</span>
+                <div>
+                  <div className="text-sm font-medium text-zinc-200">Import a ScriptSync Project</div>
+                  <div className="text-xs text-zinc-500 mt-1">
+                    Paste a previously exported project JSON to restore it. This bypasses AI processing
+                    and imports the project exactly as exported.
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <textarea
+              value={jsonInput}
+              onChange={(e) => { setJsonInput(e.target.value); setJsonError(null); }}
+              placeholder='{"config": {"id": "...", "title": "...", ...}, "sequences": [...]}'
+              className="w-full h-64 px-4 py-3 bg-zinc-900 border border-zinc-700 rounded-lg text-white placeholder-zinc-600 focus:border-blue-500 focus:outline-none font-mono text-sm resize-none"
+            />
+
+            {jsonError && (
+              <div className="p-3 bg-red-900/20 border border-red-900/50 rounded-lg text-red-400 text-sm">
+                {jsonError}
+              </div>
+            )}
+
+            <div className="text-xs text-zinc-500">
+              To export a project, open it in ScriptSync and use the Export menu.
+            </div>
+          </div>
+
+          {/* Import Button */}
+          <div className="flex justify-between pt-4">
+            <button
+              onClick={onCancel}
+              className="px-6 py-3 text-zinc-400 hover:text-white transition"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleJsonImport}
+              disabled={!jsonInput.trim()}
+              className="px-8 py-3 bg-emerald-600 hover:bg-emerald-500 disabled:bg-zinc-700 disabled:text-zinc-500 text-white font-bold rounded-lg transition"
+            >
+              Import Project
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 

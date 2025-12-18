@@ -1,12 +1,23 @@
 /**
  * ScriptView - Main script editing and viewing component
+ *
+ * Features:
+ * - Fountain syntax highlighting (view mode)
+ * - Auto-save with debounce (2s after typing stops)
+ * - Cmd+S manual save
+ * - Dirty indicator (unsaved changes)
+ * - Keyboard navigation (Shift+Arrow)
+ * - Text size adjustment (Cmd+/-/0)
  */
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useProject } from '../config/ProjectContext';
 import { Scene, LintIssue } from '../config/types';
 import { parseFountainToReact, lintScript } from '../services/scriptUtils';
 import { SuggestionsIndicator } from './SuggestionsPanel';
+
+// Auto-save delay in milliseconds
+const AUTO_SAVE_DELAY = 2000;
 
 interface ScriptViewProps {
   scene: Scene;
@@ -36,6 +47,14 @@ const ScriptView: React.FC<ScriptViewProps> = ({ scene, allScenes, onUpdateScrip
   const [editContent, setEditContent] = useState(scene.scriptContent);
   const [activeVariant, setActiveVariant] = useState('A');
 
+  // Dirty tracking (unsaved changes)
+  const [isDirty, setIsDirty] = useState(false);
+  const [lastSavedContent, setLastSavedContent] = useState(scene.scriptContent);
+  const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved');
+
+  // Auto-save timer ref
+  const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // Text size (persisted) - scales from 0.8 to 1.4
   const [textScale, setTextScale] = useState(() => {
     const saved = localStorage.getItem('scriptsync-text-scale');
@@ -57,9 +76,18 @@ const ScriptView: React.FC<ScriptViewProps> = ({ scene, allScenes, onUpdateScrip
   useEffect(() => {
     const content = (scene.variants && scene.variants[activeVariant]) ? scene.variants[activeVariant] : scene.scriptContent;
     setEditContent(content);
+    setLastSavedContent(content);
+    setIsDirty(false);
+    setSaveStatus('saved');
     setIsEditing(false);
     setParadoxWarning(null);
     setLintIssues([]);
+
+    // Clear any pending auto-save when switching scenes
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current);
+      autoSaveTimerRef.current = null;
+    }
   }, [scene.id, activeVariant, scene.scriptContent, scene.variants]);
 
   // Causal Ripple & Proactive Linter
@@ -89,15 +117,70 @@ const ScriptView: React.FC<ScriptViewProps> = ({ scene, allScenes, onUpdateScrip
 
   // --- HANDLERS ---
 
-  const handleSave = () => {
-    onUpdateScript(editContent);
-    setIsEditing(false);
-  };
+  // Save current content
+  const handleSave = useCallback(() => {
+    if (editContent !== lastSavedContent) {
+      setSaveStatus('saving');
+      onUpdateScript(editContent);
+      setLastSavedContent(editContent);
+      setIsDirty(false);
+      // Brief "saving" feedback then show "saved"
+      setTimeout(() => setSaveStatus('saved'), 300);
+    }
+  }, [editContent, lastSavedContent, onUpdateScript]);
+
+  // Handle content changes with dirty tracking and auto-save
+  const handleContentChange = useCallback((newContent: string) => {
+    setEditContent(newContent);
+
+    // Mark as dirty if different from last saved
+    if (newContent !== lastSavedContent) {
+      setIsDirty(true);
+      setSaveStatus('unsaved');
+    } else {
+      setIsDirty(false);
+      setSaveStatus('saved');
+    }
+
+    // Clear existing auto-save timer
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current);
+    }
+
+    // Set new auto-save timer (only if content changed)
+    if (newContent !== lastSavedContent) {
+      autoSaveTimerRef.current = setTimeout(() => {
+        setSaveStatus('saving');
+        onUpdateScript(newContent);
+        setLastSavedContent(newContent);
+        setIsDirty(false);
+        setTimeout(() => setSaveStatus('saved'), 300);
+      }, AUTO_SAVE_DELAY);
+    }
+  }, [lastSavedContent, onUpdateScript]);
+
+  // Cleanup auto-save timer on unmount
+  useEffect(() => {
+    return () => {
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current);
+      }
+    };
+  }, []);
 
   const getConnectedScene = (id: string) => allScenes.find(s => s.id === id);
 
   // Keyboard navigation handler
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    // Cmd/Ctrl + S = Save (works in edit mode)
+    if ((e.metaKey || e.ctrlKey) && e.key === 's') {
+      e.preventDefault();
+      if (isEditing && isDirty) {
+        handleSave();
+      }
+      return;
+    }
+
     // Text size adjustment (works in any mode) - Cmd/Ctrl + Plus/Minus
     if ((e.metaKey || e.ctrlKey) && (e.key === '=' || e.key === '+')) {
       e.preventDefault();
@@ -112,6 +195,16 @@ const ScriptView: React.FC<ScriptViewProps> = ({ scene, allScenes, onUpdateScrip
     if ((e.metaKey || e.ctrlKey) && e.key === '0') {
       e.preventDefault();
       setTextScale(1);
+      return;
+    }
+
+    // Escape = Exit edit mode (save first if dirty)
+    if (e.key === 'Escape' && isEditing) {
+      e.preventDefault();
+      if (isDirty) {
+        handleSave();
+      }
+      setIsEditing(false);
       return;
     }
 
@@ -157,7 +250,7 @@ const ScriptView: React.FC<ScriptViewProps> = ({ scene, allScenes, onUpdateScrip
       e.preventDefault();
       setIsEditing(true);
     }
-  }, [isEditing, currentSceneIndex, allScenes, onSelectScene, scene.sequenceId]);
+  }, [isEditing, isDirty, handleSave, currentSceneIndex, allScenes, onSelectScene, scene.sequenceId]);
 
   // Register keyboard listeners
   useEffect(() => {
@@ -260,17 +353,42 @@ const ScriptView: React.FC<ScriptViewProps> = ({ scene, allScenes, onUpdateScrip
                 </div>
               </div>
 
-              {/* Edit button - subtle until hovered */}
-              <button
-                onClick={() => isEditing ? handleSave() : setIsEditing(true)}
-                className={`text-xs px-4 py-1.5 rounded transition ${
-                  isEditing
-                    ? 'bg-emerald-600/90 text-white font-medium'
-                    : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'
-                }`}
-              >
-                {isEditing ? 'Save' : 'Edit'}
-              </button>
+              {/* Edit/Save button with status indicator */}
+              <div className="flex items-center gap-3">
+                {/* Save status indicator - only in edit mode */}
+                {isEditing && (
+                  <span className={`text-[10px] flex items-center gap-1.5 transition-opacity ${
+                    saveStatus === 'saved' ? 'text-zinc-500' :
+                    saveStatus === 'saving' ? 'text-blue-400' :
+                    'text-amber-400'
+                  }`}>
+                    {saveStatus === 'saving' && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
+                    )}
+                    {saveStatus === 'unsaved' && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                    )}
+                    {saveStatus === 'saved' && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-zinc-600" />
+                    )}
+                    {saveStatus === 'saving' ? 'Saving...' :
+                     saveStatus === 'unsaved' ? 'Unsaved' :
+                     'Saved'}
+                  </span>
+                )}
+                <button
+                  onClick={() => isEditing ? (isDirty ? handleSave() : setIsEditing(false)) : setIsEditing(true)}
+                  className={`text-xs px-4 py-1.5 rounded transition ${
+                    isEditing
+                      ? isDirty
+                        ? 'bg-emerald-600/90 text-white font-medium'
+                        : 'bg-zinc-700 text-zinc-300 hover:bg-zinc-600'
+                      : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'
+                  }`}
+                >
+                  {isEditing ? (isDirty ? 'Save' : 'Done') : 'Edit'}
+                </button>
+              </div>
             </div>
 
             {/* Linter warnings - only when editing */}
@@ -327,7 +445,7 @@ const ScriptView: React.FC<ScriptViewProps> = ({ scene, allScenes, onUpdateScrip
 
                 <textarea
                   value={editContent}
-                  onChange={(e) => setEditContent(e.target.value)}
+                  onChange={(e) => handleContentChange(e.target.value)}
                   className="w-full h-full min-h-[600px] bg-transparent text-zinc-200 font-script leading-relaxed border-none focus:ring-0 resize-none outline-none p-8 pl-10"
                   style={{ fontSize: `${13 * textScale}px` }}
                   spellCheck={false}
@@ -359,7 +477,10 @@ const ScriptView: React.FC<ScriptViewProps> = ({ scene, allScenes, onUpdateScrip
           <div className="mt-4 text-[10px] text-zinc-600 flex flex-wrap gap-x-4 gap-y-1">
             <span><kbd className="px-1 py-0.5 bg-zinc-800 rounded text-zinc-400">Shift</kbd> + <kbd className="px-1 py-0.5 bg-zinc-800 rounded text-zinc-400">↑↓</kbd> Navigate</span>
             <span><kbd className="px-1 py-0.5 bg-zinc-800 rounded text-zinc-400">e</kbd> Edit</span>
+            <span><kbd className="px-1 py-0.5 bg-zinc-800 rounded text-zinc-400">⌘S</kbd> Save</span>
+            <span><kbd className="px-1 py-0.5 bg-zinc-800 rounded text-zinc-400">Esc</kbd> Done</span>
             <span><kbd className="px-1 py-0.5 bg-zinc-800 rounded text-zinc-400">⌘</kbd><kbd className="px-1 py-0.5 bg-zinc-800 rounded text-zinc-400">+/-</kbd> Text size</span>
+            <span className="text-zinc-700 ml-2">Auto-saves after 2s</span>
           </div>
         </div>
       </div>

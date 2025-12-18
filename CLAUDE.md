@@ -17,8 +17,8 @@ A context-aware screenwriting environment with AI-powered script analysis. Track
 
 - **Framework**: React 19.2 + TypeScript 5.8
 - **Build**: Vite 6.2
-- **Testing**: Vitest + Testing Library + Playwright (E2E)
-- **AI**: Google Gemini via `@google/genai`
+- **Testing**: Vitest + Testing Library
+- **AI**: Claude (Anthropic) via direct API - Opus 4, Sonnet 4, Sonnet 4.5 models
 - **PDF**: pdfjs-dist for screenplay parsing
 - **Deployment**: Vercel / Netlify
 
@@ -26,71 +26,113 @@ A context-aware screenwriting environment with AI-powered script analysis. Track
 
 ```
 src/
-├── components/         # 33 React components
-│   ├── ScriptView.tsx       # Main script editor
-│   ├── BeatBoard.tsx        # Sequence/beat visualization
-│   ├── CharacterDashboard   # Character tracking
-│   ├── Navigation.tsx       # Scene browser sidebar
+├── components/           # React components
+│   ├── ScriptView.tsx         # Main script editor
+│   ├── BeatBoard.tsx          # Sequence/beat visualization
+│   ├── CharacterDashboard.tsx # Character tracking with arc analysis
+│   ├── Navigation.tsx         # Scene browser sidebar
+│   ├── ContextPanel.tsx       # Side panel (4 tabs: Beats, Notes, AI, More)
+│   ├── ProjectSettings.tsx    # Edit all project config
+│   ├── ProjectOverview.tsx    # View project metadata (click title to open)
+│   ├── ImportWizard.tsx       # PDF/Fountain/JSON import
+│   ├── TimelineView.tsx       # Story structure visualization
+│   ├── AppStatusBar.tsx       # Top nav with view switcher
 │   └── ...
-├── services/           # Business logic
-│   ├── geminiService.ts     # AI integration (42KB)
-│   ├── pdfParser.ts         # PDF screenplay parsing
-│   ├── exportService.ts     # Fountain/FDX/CSV export
-│   ├── versionHistory.ts    # Scene snapshots + diff
-│   ├── memoryPalace.ts      # Persistent AI context
-│   └── ingestion/           # PDF/Fountain pipeline
-├── hooks/              # Custom React hooks
-│   ├── useColumnLayout.ts   # Resizable columns
+├── services/             # Business logic
+│   ├── geminiService.ts       # AI integration (uses Claude, not Gemini!)
+│   ├── characterAnalysis.ts   # Writer-focused character metrics
+│   ├── pdfParser.ts           # PDF screenplay parsing
+│   ├── exportService.ts       # Fountain/FDX/CSV export
+│   ├── versionHistory.ts      # Scene snapshots + diff
+│   ├── memoryPalace.ts        # Persistent AI context
+│   └── ingestion/             # PDF/Fountain pipeline
+├── hooks/                # Custom React hooks
+│   ├── useColumnLayout.ts     # Resizable columns
 │   ├── useKeyboardShortcuts.ts
-│   └── useScriptMembrane.ts # AI script analysis
-├── contexts/           # React contexts
-│   ├── ProjectContext.tsx
-│   └── AIAgentsContext.tsx
-├── projects/           # Sample screenplays
+│   └── useScriptMembrane.ts   # AI script analysis
+├── contexts/             # React contexts
+│   ├── ProjectContext.tsx     # Project state + undo/redo
+│   └── AIAgentsContext.tsx    # AI coordination + suggestions
+├── config/               # Type definitions
+│   └── types.ts               # ThemeStatement, SceneStatus, etc.
+├── projects/             # Sample screenplays
 │   ├── 8-billion-genies/
 │   └── bell-bottoms/
-└── test/               # Test utilities
+├── test/                 # Test utilities
+└── docs/                 # Planning docs
+    ├── EXECUTION_PLAN_PROJECT_CREATION.md
+    └── claude-prompt-template.md
+```
+
+## Key Features (Current State)
+
+### Project Creation
+- **Quick Start**: Title + genre → into editor in 30 seconds
+- **Import**: PDF, Fountain, or JSON
+- **Project Settings**: Edit all config anytime (Cmd/Ctrl + ,)
+
+### AI Integration (Claude)
+- **Quick Actions**: One-click Analyze Scene, Check Continuity, Alt Versions, Write Dialogue
+- **Suggestion Chips**: Pre-built prompts for common questions
+- **Script Doctor Chat**: Context-aware conversation about your screenplay
+- **Session Memory**: AI learns corrections within session
+
+### ContextPanel Structure (4 tabs)
+- **Beats**: Scene beats with completion tracking
+- **Notes**: Scene notes + Studio feedback + Active Passes (integrated)
+- **AI**: Quick Actions + Script Doctor chat
+- **More**: Track, Cuts, Dialogue, Ideas (overflow tools)
+
+## Sharp Edges
+
+1. **No linter configured** - No `npm run lint` command. Be careful with code style.
+
+2. **Large service files** - `geminiService.ts` is 42KB. Work in sections.
+
+3. **AI service naming mismatch** - File is named `geminiService.ts` but actually uses **Claude (Anthropic)**, not Gemini. Historical naming, works correctly.
+
+4. **Environment variables** - AI features need `VITE_ANTHROPIC_API_KEY` in `.env.local`.
+
+5. **Test coverage is sparse** - 6 test files, 101 tests total. Core flows covered, not exhaustive.
+
+## Key Patterns
+
+### State Management
+React Context (`ProjectContext`, `AIAgentsContext`) - no Redux.
+
+### AI Integration
+All AI calls go through `services/geminiService.ts` (despite the name, it's Claude).
+Memory persistence via `services/memoryPalace.ts`.
+
+### Theme Model
+```typescript
+// New structured format (preferred)
+theme: {
+  core: "Control destroys what makes life worth living",
+  counterArgument: "Without control, chaos destroys everything"
+}
+
+// Legacy format (still supported)
+themes: ["Control", "Freedom"]
+```
+
+### Scene Status
+```typescript
+type SceneStatus = 'draft' | 'review' | 'polished' | 'locked';
 ```
 
 ## Path Aliases
 
-Use these in imports:
 - `@/*` → `src/*`
 - `@components/*` → `src/components/*`
 - `@services/*` → `src/services/*`
 - `@config/*` → `src/config/*`
-- `@projects/*` → `src/projects/*`
 
-## Sharp Edges
+## Development Status
 
-1. **No linter configured** - No `npm run lint` command exists. Be careful with code style.
+**Execution Plan**: Complete (see `docs/EXECUTION_PLAN_PROJECT_CREATION.md`)
+- Phase 1: ProjectSettings, Quick Start, JSON Import ✓
+- Phase 2: Empty States, Tooltips ✓
+- Phase 3: Documentation, AI Quick Actions ✓
 
-2. **Large service files** - `geminiService.ts` is 42KB. Work in sections, use line ranges.
-
-3. **AI service naming mismatch** - Service is named `geminiService.ts` but README says "Claude AI". The code actually uses Google Gemini (`@google/genai`).
-
-4. **Environment variables** - AI features need `ANTHROPIC_API_KEY` in `.env.local` (copy from `.env.local.example`).
-
-5. **Test coverage is sparse** - Only 6 test files exist:
-   - `Navigation.test.tsx`
-   - `RewriteTracker.test.tsx`
-   - `ScriptView.test.tsx`
-   - `exportService.test.ts`
-   - `versionHistory.test.ts`
-   - `scriptUtils.test.ts`
-
-6. **Two config directories** - `src/config/` contains project-specific screenplay configs (8-billion-genies, bell-bottoms). `src/projects/` has duplicates. Prefer `src/config/`.
-
-## Key Patterns
-
-### Component Structure
-Components use functional React with hooks. Most have corresponding test files using Testing Library.
-
-### State Management
-Uses React Context (`ProjectContext`, `AIAgentsContext`) rather than Redux.
-
-### AI Integration
-AI calls go through `services/geminiService.ts`. Memory persistence via `services/memoryPalace.ts`.
-
-### PDF Parsing Pipeline
-`services/ingestion/pipeline.ts` → `parsers.ts` → `aiProcessor.ts`
+**Ready for**: Deployment and real-world testing

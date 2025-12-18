@@ -72,8 +72,9 @@ Hello? Anyone here?`,
     const editButton = screen.getByRole('button', { name: /Edit/i });
     fireEvent.click(editButton);
 
-    // Should show Save button in edit mode
-    expect(screen.getByRole('button', { name: /Save/i })).toBeInTheDocument();
+    // Should show Done button in edit mode (when no changes made)
+    // Button shows "Save" only when there are unsaved changes
+    expect(screen.getByRole('button', { name: /Done/i })).toBeInTheDocument();
     // Should show textarea
     expect(screen.getByRole('textbox')).toBeInTheDocument();
   });

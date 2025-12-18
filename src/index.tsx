@@ -41,6 +41,7 @@ interface ProjectSelectorProps {
   onSelectProject: (id: string) => void;
   onImportNew: () => void;
   onLoadSample: (projectId: string) => void;
+  onQuickStart: (title: string) => void;
 }
 
 const ProjectSelector: React.FC<ProjectSelectorProps> = ({
@@ -48,7 +49,18 @@ const ProjectSelector: React.FC<ProjectSelectorProps> = ({
   onSelectProject,
   onImportNew,
   onLoadSample,
-}) => (
+  onQuickStart,
+}) => {
+  const [showQuickStart, setShowQuickStart] = React.useState(false);
+  const [quickStartTitle, setQuickStartTitle] = React.useState('');
+
+  const handleQuickStartSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const title = quickStartTitle.trim() || 'Untitled Project';
+    onQuickStart(title);
+  };
+
+  return (
   <div className="bg-zinc-950 min-h-screen text-zinc-200 flex items-center justify-center p-8">
     <div className="max-w-2xl w-full">
       <div className="text-center mb-12">
@@ -59,17 +71,62 @@ const ProjectSelector: React.FC<ProjectSelectorProps> = ({
       </div>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-2 gap-4 mb-8">
+      <div className="grid grid-cols-3 gap-4 mb-8">
+        {/* Quick Start - inline form */}
+        {!showQuickStart ? (
+          <button
+            onClick={() => setShowQuickStart(true)}
+            className="p-6 bg-gradient-to-br from-emerald-600/20 to-teal-600/20 border border-emerald-500/30 rounded-xl text-left hover:border-emerald-500/60 transition group"
+          >
+            <div className="text-3xl mb-3">✨</div>
+            <div className="text-lg font-bold text-white group-hover:text-emerald-400 transition">
+              Quick Start
+            </div>
+            <div className="text-sm text-zinc-400">
+              Create a blank project
+            </div>
+          </button>
+        ) : (
+          <form
+            onSubmit={handleQuickStartSubmit}
+            className="p-6 bg-gradient-to-br from-emerald-600/20 to-teal-600/20 border border-emerald-500/60 rounded-xl"
+          >
+            <input
+              type="text"
+              value={quickStartTitle}
+              onChange={(e) => setQuickStartTitle(e.target.value)}
+              placeholder="Project title..."
+              autoFocus
+              className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-500 mb-3"
+            />
+            <div className="flex gap-2">
+              <button
+                type="submit"
+                className="flex-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium rounded-lg transition"
+              >
+                Create
+              </button>
+              <button
+                type="button"
+                onClick={() => { setShowQuickStart(false); setQuickStartTitle(''); }}
+                className="px-3 py-1.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-300 text-sm rounded-lg transition"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        )}
+
         <button
           onClick={onImportNew}
           className="p-6 bg-gradient-to-br from-blue-600/20 to-purple-600/20 border border-blue-500/30 rounded-xl text-left hover:border-blue-500/60 transition group"
         >
           <div className="text-3xl mb-3">📥</div>
           <div className="text-lg font-bold text-white group-hover:text-blue-400 transition">
-            Import Screenplay
+            Import
           </div>
           <div className="text-sm text-zinc-400">
-            Upload scripts, notes, beat sheets
+            PDF, Fountain, or notes
           </div>
         </button>
 
@@ -79,10 +136,10 @@ const ProjectSelector: React.FC<ProjectSelectorProps> = ({
         >
           <div className="text-3xl mb-3">🎬</div>
           <div className="text-lg font-bold text-white group-hover:text-zinc-300 transition">
-            Bell Bottoms
+            Demo
           </div>
           <div className="text-sm text-zinc-400">
-            Time-travel action comedy
+            Try with sample project
           </div>
         </button>
       </div>
@@ -140,7 +197,8 @@ const ProjectSelector: React.FC<ProjectSelectorProps> = ({
       </div>
     </div>
   </div>
-);
+  );
+};
 
 // =============================================================================
 // LOADING SCREEN
@@ -274,6 +332,58 @@ const Root: React.FC = () => {
     setMode('selector');
   };
 
+  // Handle quick start (create blank project with just a title)
+  const handleQuickStart = (title: string) => {
+    const id = `project-${Date.now()}`;
+    const blankProject: ProjectData = {
+      config: {
+        id,
+        title,
+        logline: '',
+        description: '',
+        genres: [],
+        characters: [],
+        theme: { core: '', counterArgument: '' },
+        ai: {
+          styleReferences: [],
+          toneDescriptor: '',
+          uniqueConstraints: [],
+        },
+        trackingCategories: [],
+      },
+      sequences: [
+        {
+          id: 'seq_1',
+          title: 'Act One',
+          dramaticQuestion: '',
+          climax: '',
+          resolution: '',
+          scenes: [
+            {
+              id: 'scene_001',
+              sequenceId: 'seq_1',
+              title: 'Opening Scene',
+              pageNumber: 1,
+              timeOfDay: 'DAY',
+              location: 'LOCATION',
+              summary: 'Opening scene',
+              scriptContent: 'INT. LOCATION - DAY\n\n',
+              beats: [],
+              notes: [],
+              tracking: [],
+              status: 'draft',
+            },
+          ],
+        },
+      ],
+    };
+    saveProject(blankProject);
+    setActiveProject(id);
+    setProjectData(blankProject);
+    setProjects(getProjectsIndex());
+    setMode('project');
+  };
+
   // Error display
   if (error) {
     return (
@@ -305,6 +415,7 @@ const Root: React.FC = () => {
           onSelectProject={handleSelectProject}
           onImportNew={() => setMode('import')}
           onLoadSample={handleLoadSample}
+          onQuickStart={handleQuickStart}
         />
       );
 

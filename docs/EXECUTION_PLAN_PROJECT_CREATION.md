@@ -1,265 +1,208 @@
 # ScriptSync Project Creation Enhancement - Execution Plan
 
 > Generated: December 18, 2025
-> **Updated: December 18, 2025** - Complete overhaul + UX polish + Timeline redesign + ContextPanel consolidation
-> Status: Planning Complete - Ready for Implementation
+> **Revised: December 18, 2025** - Bootstrapping rigor applied, priorities restructured
+> **Completed: December 18, 2025** - Phase 1 fully implemented
+> **Phase 3 Completed: December 18, 2025** - Documentation and AI enhancements
+> Status: ALL PHASES COMPLETE
 > Branch: `claude/align-project-creation-ui-0US27`
 
 ## Executive Summary
 
-ScriptSync needs to meet screenwriters where they are. Most writers don't have JSON—they have ideas, scripts, or vague notions. This plan creates **four entry points** that collapse into a unified experience, with the most common path (Quick Start) promoted to equal priority with the power-user path (JSON Import).
+ScriptSync needs to let writers **edit their projects after creation** before adding new creation paths. The original plan over-engineered project creation with four separate components when simpler solutions exist.
 
-**Key insight:** The 15% gap analysis is technically accurate but strategically wrong. Writers don't need 100% richness at creation time—they need to *start fast* and *enrich progressively*. The gap closes through use, not through onboarding forms.
+**Key insight from revision:** ProjectSettings is more valuable than Quick Start. Every user who imports a script immediately needs to add characters, theme, and motifs. Build the editing capability first.
+
+**What was cut:** CloneTemplate (solution looking for a problem). Template cloning is confusing for new writers and unnecessary—Quick Start with presets achieves the same goal.
 
 ---
 
 ## Recent Codebase Changes (December 18, 2025)
 
-> **IMPORTANT:** The following changes were implemented and must be reflected in this plan:
+> **IMPORTANT:** The following UX polish was implemented and is now production-ready:
 
 ### Theme Model Restructured
-- **OLD (deprecated):** `themes: string[]` - Simple array of theme words
-- **NEW (preferred):** `theme: ThemeStatement` - Structured argument model
+- **NEW:** `theme: ThemeStatement` - Structured argument model
   ```typescript
   interface ThemeStatement {
     core: string;           // "Control destroys what makes life worth living"
     counterArgument: string; // "Without control, chaos destroys everything"
   }
   ```
-- **Added:** `motifs: string[]` - Recurring visual/symbolic elements (separate from theme)
-- Both formats accepted for backwards compatibility
+- **Added:** `motifs: string[]` - Recurring visual/symbolic elements
+- Both old `themes[]` and new `theme` formats accepted for backwards compatibility
 
 ### Scene Status Added
 ```typescript
 type SceneStatus = 'draft' | 'review' | 'polished' | 'locked';
 ```
-Scenes now have optional `status` field for workflow tracking.
 
-### ContextPanel Tab Consolidation (Major Restructure)
-**Old structure (6 tabs):** Beats | Notes | Passes | Track | Cuts | AI
+### ContextPanel Tab Consolidation
+**Old (6 tabs):** Beats | Notes | Passes | Track | Cuts | AI
+**New (4 tabs):** Beats | Notes | AI | More
 
-**New structure (4 tabs):** Beats | Notes | AI | More
-
-- **Beats tab:** Unchanged - scene beats with completion indicators
-- **Notes tab:** Now integrates THREE sources:
-  - Scene notes (original)
-  - Studio feedback with source labels (Amazon, Point Grey)
-  - **Active Passes** - Rewrite goals relevant to this scene/sequence
-    - Priority-sorted (Critical → High → Medium → Low)
-    - Color-coded borders for visual hierarchy
-    - "Next Move" prominently displayed with arrow icon
-- **AI tab:** Script Doctor chat (unchanged)
-- **More tab:** Elegant overflow with pill-style sub-navigation
-  - **Track:** Scene tracking items + AI Continuity Check
-  - **Cuts:** Boneyard for saving cut dialogue/ideas
-  - **Dialogue:** AI Dialogue Generator (3 variations: direct, subtextual, thematic)
-  - **Ideas:** AI Idea Generator (alternative beats)
-
-**Philosophy:** Writers use Beats/Notes/AI 90% of the time. Track/Cuts/Dialogue/Ideas are "power tools" - available but not cluttering primary navigation.
+- **Notes tab** now integrates: Scene notes, Studio feedback, Active Passes (priority-sorted)
+- **More tab** has pill-style sub-navigation: Track, Cuts, Dialogue, Ideas
 
 ### Character Analysis Overhauled
-New `src/services/characterAnalysis.ts` replaces academic metrics with writer-useful data:
-- **Removed:** complexity%, aggression%, questions% (not useful)
-- **Added:**
-  - Verbal tics detection (fillers, catchphrases, speech patterns)
-  - Speaking partners analysis (who do they talk to most?)
-  - Emotional register tracking (conflict, intimate, elevated, comedic)
-  - Arc markers (first/last appearance, peak activity scene)
+New `src/services/characterAnalysis.ts`:
+- Verbal tics detection
+- Speaking partners analysis
+- Emotional register tracking
+- Arc markers (first/last appearance, peak activity)
 
-### Navigation Streamlined
-- **Removed from sidebar:** Stats bar, style references (moved to ProjectOverview)
-- **Kept:** Quick filters, scene badges, genre tags (moved to bottom)
-- **Philosophy:** Sidebar is for navigation only, not project metadata
+### Navigation & ProjectOverview
+- Project title in status bar now clickable → opens ProjectOverview
+- Removed duplicate title from sidebar
+- Stats moved to ProjectOverview header
 
-### ProjectOverview Enhanced
-- **Added:** Project stats in header (pages, sequences, scenes, notes)
-- Stats now shown in the right place: the Project Info modal
-
-### Timeline Completely Redesigned
-The old dual-timeline view (for Bell Bottoms-style stories) replaced with **Story Structure** view:
-- **Act Structure Bar:** Visual proportions of Act 1/2/3 with page counts
-- **Sequence Blocks:** Density visualization showing scene count and pages per sequence
-- **Character Presence Swimlanes:** When do main characters appear/disappear across the script?
-- **Scene Flow Grid:** Horizontal card layout with connection indicators
-- **Color Coding:** Blue (Act 1), Amber (Act 2), Red (Act 3)
-
-This is the standard template for 90% of screenplays. Multi-timeline view can be added as a toggle for projects like Bell Bottoms.
-
-### SuggestionsPanel Cleanup
-- **Removed:** "Voice OK" indicator (unnecessary noise)
-
-### ProjectOverview Accessibility Improved
-- **Problem:** ProjectOverview was hidden behind 2 clicks (menu → "Project Info")
-- **Solution:** Project title in top status bar is now clickable (with hover info icon)
-- **Also:** Removed duplicate project title from Navigation sidebar (was showing twice)
-- **Result:** One-click access to theme, characters, stats, AI settings
-- **UX Pattern:** "Click on what you want to know about" - natural discovery
+### Timeline Redesign + Hover Highlighting
+- Act Structure Bar with proportional visualization
+- Sequence Blocks showing density
+- Character Presence Swimlanes
+- **NEW:** Hover over scene → connected scenes light up, unrelated scenes fade
 
 ---
 
-## Part 1: Design Philosophy
+## Part 1: Revised Design Philosophy
 
-### The Writer's Journey (Not the System's Requirements)
+### Why ProjectSettings First
 
 ```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                      WHERE WRITERS ACTUALLY START                        │
-├─────────────────────────────────────────────────────────────────────────┤
-│                                                                          │
-│  70% │ "I have an idea"      │ → QUICK START (30 seconds to first scene)│
-│      │ - Title and logline   │                                          │
-│      │ - Genre intuition     │                                          │
-│                                                                          │
-│  20% │ "I have a script"     │ → IMPORT (existing flow)                 │
-│      │ - PDF/FDX/Fountain    │                                          │
-│      │ - Want to organize it │                                          │
-│                                                                          │
-│   8% │ "I have structure"    │ → CLONE TEMPLATE (learn by example)      │
-│      │ - Studied craft       │                                          │
-│      │ - Want sequences/beats│                                          │
-│                                                                          │
-│   2% │ "I have JSON"         │ → AI IMPORT (power users)                │
-│      │ - Used Claude/ChatGPT │                                          │
-│      │ - Have rich data      │                                          │
-│                                                                          │
-└─────────────────────────────────────────────────────────────────────────┘
+ORIGINAL PLAN:                    REVISED PLAN:
+┌────────────────────┐            ┌────────────────────┐
+│ 1A. Quick Start    │            │ 1A. ProjectSettings│ ← EDIT FIRST
+│ 1B. AI Import      │            │ 1B. Quick Start    │ ← Inline, not new component
+│ 1C. ProjectSettings│            │ 1C. JSON Import    │ ← Tab in ImportWizard
+│ 2.  Enhanced Import│            │ 2.  Empty States   │
+│ 3.  Clone Template │ ← CUT      │ 3.  Polish         │
+└────────────────────┘            └────────────────────┘
 ```
 
-### Core Principles
+**Rationale:**
+1. Every user who imports a script needs to add characters/theme immediately
+2. ProjectSettings unblocks 100% of users; Quick Start helps only new projects
+3. Consolidating creation paths reduces code and cognitive load
 
+### Core Principles (Unchanged)
 1. **Speed over completeness** - Get writers into scenes within 30 seconds
 2. **Progressive disclosure** - Advanced features appear when relevant
 3. **Enrichment is ongoing** - Projects grow richer through use, not setup
 4. **Edit everything later** - Nothing is locked at creation time
-5. **Meet them where they are** - Four paths, one destination
+
+### Guidance Philosophy: Empty States, Not Tutorials
+- **No step-by-step tours** - The UI should be self-explanatory
+- **Contextual empty states** - Help text appears where relevant
+- **Hover tooltips** - Non-obvious controls get `title` attributes
+- **Build tutorials when users ask** - Not before
 
 ---
 
-## Part 2: Unified Project Hub
+## Part 2: Implementation Phases
 
-### The Missing Piece: Project Settings
+### Phase 1A: ProjectSettings (PRIORITY: CRITICAL) ✅ COMPLETE
 
-**Current gap:** Once a project is created, there's no way to edit `config.title`, add characters, update themes, etc.
+**Why first:** Unblocks every user who imports a script and needs to edit config.
 
-**Solution:** A unified Project Hub that handles both creation and ongoing management.
-
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                         PROJECT HUB                                      │
-├─────────────────────────────────────────────────────────────────────────┤
-│                                                                          │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐    │
-│  │   CREATE    │  │   MANAGE    │  │   EXPORT    │  │   ARCHIVE   │    │
-│  │  ─────────  │  │  ─────────  │  │  ─────────  │  │  ─────────  │    │
-│  │ Quick Start │  │ Edit Config │  │ JSON Export │  │ Project     │    │
-│  │ Script Imp  │  │ Characters  │  │ PDF Export  │  │ Versioning  │    │
-│  │ Clone Temp  │  │ Theme/Motifs│  │ FDX Export  │  │ Backup      │    │
-│  │ AI Import   │  │ AI Settings │  │ Share       │  │ Delete      │    │
-│  │             │  │ Status/Wkfl │  │             │  │             │    │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘    │
-│                                                                          │
-│  ┌─────────────────────────────────────────────────────────────────┐    │
-│  │                    RECENT PROJECTS                               │    │
-│  │  8 Billion Genies • Bell Bottoms • [New Project...]             │    │
-│  └─────────────────────────────────────────────────────────────────┘    │
-│                                                                          │
-└─────────────────────────────────────────────────────────────────────────┘
-```
-
-### Project Settings Panel (New Component)
-
-**File:** `src/components/ProjectSettings.tsx` (NEW)
-
-This component allows editing all `config` fields after project creation:
+**File:** `src/components/ProjectSettings.tsx` (CREATED)
 
 ```typescript
 /**
- * ProjectSettings - Edit project configuration
+ * ProjectSettings - Edit all project configuration
  *
  * Accessible from:
- * - Navigation header (gear icon)
- * - Project Hub
+ * - Status bar gear icon (new)
+ * - ProjectOverview "Edit Settings" button
  * - Cmd/Ctrl + , shortcut
  */
 
 interface ProjectSettingsProps {
-  project: ProjectData;
-  onUpdate: (updates: Partial<ProjectConfig>) => void;
   onClose: () => void;
 }
 
-// Sections:
-// 1. Basic Info (title, id, description, logline)
-// 2. Genres (multi-select with custom option)
-// 3. Theme (core + counter-argument editor)
-// 4. Motifs (tag input)
-// 5. Characters (table with add/edit/delete)
-// 6. AI Settings (style refs, tone, constraints)
-// 7. Tracking Categories (for continuity panel)
-// 8. Note Authors (for source labels)
+// Tabs:
+// 1. Basic - title, logline, genres, description
+// 2. Characters - table with add/edit/delete, arc editing
+// 3. Theme - core statement + counter-argument with examples
+// 4. AI - style references, tone, constraints
+// 5. Tracking - categories for continuity panel
 ```
 
----
-
-## Part 3: Revised Implementation Phases
-
-### Phase 1A: Quick Start (PRIORITY: CRITICAL)
-
-**Why first:** 70% of users will use this path. It removes all friction.
-
-**File:** `src/components/QuickStart.tsx` (NEW)
-
-```typescript
-/**
- * QuickStart - Minimal friction project creation
- *
- * Three fields → AI expansion → Into scene editor in 30 seconds
- */
-
-interface QuickStartProps {
-  onComplete: (project: ProjectData) => void;
-  onCancel: () => void;
-}
-
-// The form:
-// ┌────────────────────────────────────────────────────┐
-// │ What's your screenplay called?                     │
-// │ ┌──────────────────────────────────────────────┐  │
-// │ │ Untitled Project                             │  │
-// │ └──────────────────────────────────────────────┘  │
-// │                                                    │
-// │ Describe it in one sentence:                      │
-// │ ┌──────────────────────────────────────────────┐  │
-// │ │ A [character] must [goal] before [stakes]...│  │
-// │ └──────────────────────────────────────────────┘  │
-// │                                                    │
-// │ What kind of story is this?                       │
-// │ ┌──────────────────────────────────────────────┐  │
-// │ │ Drama ▾  │ Action ▾  │ + Add genre          │  │
-// │ └──────────────────────────────────────────────┘  │
-// │                                                    │
-// │                           [ Cancel ] [ Create → ] │
-// └────────────────────────────────────────────────────┘
-
-// On submit:
-// 1. Generate kebab-case ID from title
-// 2. Create minimal ProjectConfig
-// 3. Create single "Act One" sequence with one empty scene
-// 4. Set scene.status = 'draft'
-// 5. Navigate directly to scene editor
-
-// NO AI expansion during creation - keep it instant
-// AI enrichment happens later via "Suggest Characters" etc.
+**UI Mockup:**
+```
+┌─────────────────────────────────────────────────────────────┐
+│ Project Settings                                       [×]  │
+├─────────────────────────────────────────────────────────────┤
+│  [Basic] [Characters] [Theme] [AI] [Tracking]               │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  Title                                                      │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │ 8 Billion Genies                                    │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                                                             │
+│  Logline                                                    │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │ When everyone on Earth gets one wish...             │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                                                             │
+│  Genres                                                     │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │ [Sci-Fi ×] [Comedy ×] [+ Add]                      │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                                                             │
+│                                        [ Save Changes ]     │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-**What gets created:**
+**Empty States (Contextual Guidance):**
+- Characters tab: "No characters defined yet. Add them as you write, or describe your protagonist below."
+- Theme tab: "Theme develops through revision. What argument is your story making?"
+- AI tab: "Optional. Add style references to help AI understand your voice."
 
+**Keyboard Shortcut:** Cmd/Ctrl + , (standard settings shortcut)
+
+### Phase 1B: Quick Start (Inline in ProjectSelector) ✅ COMPLETE
+
+**Why inline:** Simpler than new component, same UX.
+
+**File:** `src/index.tsx` (MODIFIED - ProjectSelector)
+
+Add a "Start Fresh" card that expands to inline form:
+
+```
+┌────────────────────────────────────────────────────────────┐
+│                        ScriptSync                           │
+│   Context-aware screenwriting with AI-powered analysis      │
+├────────────────────────────────────────────────────────────┤
+│                                                             │
+│  ┌─────────────────────┐  ┌─────────────────────────────┐  │
+│  │    ✨ START FRESH   │  │     📥 IMPORT SCREENPLAY    │  │
+│  │                     │  │                             │  │
+│  │  Title:             │  │  Upload scripts, notes,     │  │
+│  │  ┌───────────────┐  │  │  beat sheets, or paste JSON │  │
+│  │  │ My Screenplay │  │  │                             │  │
+│  │  └───────────────┘  │  │                             │  │
+│  │                     │  │                             │  │
+│  │  Genre:             │  │                             │  │
+│  │  [Drama ▾] [+ Add]  │  │                             │  │
+│  │                     │  │                             │  │
+│  │    [ Create → ]     │  │      [ Import → ]           │  │
+│  └─────────────────────┘  └─────────────────────────────┘  │
+│                                                             │
+│  ─────────────────── Sample Projects ───────────────────   │
+│                                                             │
+│  🧞 8 Billion Genies    🎬 Bell Bottoms                    │
+│                                                             │
+└────────────────────────────────────────────────────────────┘
+```
+
+**What gets created (minimal valid project):**
 ```json
 {
   "config": {
     "id": "my-screenplay",
     "title": "My Screenplay",
-    "logline": "A burned-out teacher discovers...",
     "genres": ["Drama"],
     "characters": [],
     "theme": null,
@@ -280,363 +223,260 @@ interface QuickStartProps {
 }
 ```
 
-### Phase 1B: AI JSON Import (PRIORITY: CRITICAL)
+**Post-creation:** Navigate to scene editor, show toast: "Project created. Edit settings anytime with ⌘,"
 
-**Why parallel:** Power users need this. It's the "escape hatch" for rich data.
+### Phase 1C: JSON Import (Tab in ImportWizard) ✅ COMPLETE
 
-**File:** `src/components/ImportFromAI.tsx` (NEW)
+**Why tab:** Consolidates import paths, consistent UX.
 
-Same as previously specified, but with improved UX:
+**File:** `src/components/ImportWizard.tsx` (MODIFIED)
 
-```
-┌────────────────────────────────────────────────────────────┐
-│ Import from AI                                              │
-│                                                             │
-│ Paste JSON from Claude, ChatGPT, or any AI tool:           │
-│ ┌─────────────────────────────────────────────────────┐    │
-│ │                                                     │    │
-│ │  {                                                  │    │
-│ │    "config": { ... }                               │    │
-│ │  }                                                  │    │
-│ │                                                     │    │
-│ └─────────────────────────────────────────────────────┘    │
-│                                                             │
-│ ┌─────────────────────────────────────────────────────┐    │
-│ │ 💡 Don't have JSON yet?                            │    │
-│ │                                                     │    │
-│ │ Use our Claude Project template to develop your    │    │
-│ │ screenplay through conversation, then export JSON. │    │
-│ │                                                     │    │
-│ │ [Copy Claude Template]  [View Guide]               │    │
-│ └─────────────────────────────────────────────────────┘    │
-│                                                             │
-│                             [ Cancel ]  [ Validate & Import ]│
-└────────────────────────────────────────────────────────────┘
-```
-
-### Phase 1C: Project Settings (PRIORITY: CRITICAL)
-
-**Why critical:** Without this, users are stuck with whatever they set at creation.
-
-**File:** `src/components/ProjectSettings.tsx` (NEW)
-
-Tabbed interface for all project configuration:
+Add fourth tab to existing wizard:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│ Project Settings                                       [×]  │
+│ Import Screenplay                                      [×]  │
 ├─────────────────────────────────────────────────────────────┤
-│  [Basic] [Characters] [Theme] [AI] [Tracking] [Advanced]   │
+│  [PDF/FDX] [Fountain] [Beat Sheet] [JSON]  ← NEW TAB        │
 ├─────────────────────────────────────────────────────────────┤
 │                                                             │
-│  Title                                                      │
+│  Paste JSON from Claude, ChatGPT, or any AI tool:          │
 │  ┌─────────────────────────────────────────────────────┐   │
-│  │ 8 Billion Genies                                    │   │
-│  └─────────────────────────────────────────────────────┘   │
-│                                                             │
-│  Logline                                                    │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │ When everyone on Earth gets one wish...             │   │
-│  └─────────────────────────────────────────────────────┘   │
-│                                                             │
-│  Genres                                                     │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │ [Sci-Fi ×] [Comedy ×] [+ Add]                      │   │
-│  └─────────────────────────────────────────────────────┘   │
-│                                                             │
-│  Description                                                │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │ Based on the Image Comics series...                 │   │
+│  │                                                     │   │
+│  │  {                                                  │   │
+│  │    "config": { ... }                               │   │
+│  │  }                                                  │   │
 │  │                                                     │   │
 │  └─────────────────────────────────────────────────────┘   │
 │                                                             │
-│                                        [ Save Changes ]     │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │ ℹ️  Don't have JSON yet?                            │   │
+│  │                                                     │   │
+│  │ Use Claude or ChatGPT to develop your screenplay   │   │
+│  │ through conversation, then ask it to export JSON.  │   │
+│  │                                                     │   │
+│  │ [Copy Prompt Template]                              │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                                                             │
+│  Validation: ✓ Valid JSON  ✓ Has config  ✓ Has sequences   │
+│                                                             │
+│                              [ Cancel ]  [ Import Project ] │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-**Tabs:**
+**Validation:**
+- Is it valid JSON?
+- Does it have `config.id` and `config.title`?
+- Does it have at least one sequence with one scene?
+- Accept both `theme: ThemeStatement` and legacy `themes: string[]`
 
-1. **Basic** - title, logline, genres, description
-2. **Characters** - Full character table with add/edit/delete, arc editing
-3. **Theme** - Core statement + counter-argument editor with examples
-4. **AI** - Style references, tone, constraints, custom instructions
-5. **Tracking** - Categories for continuity panel
-6. **Advanced** - Note authors, settings, export/import config
+### Phase 2: Empty States & Tooltips ✅ COMPLETE
 
-### Phase 2: Enhanced Script Import
+**File:** Multiple components (MODIFIED)
 
-**File:** `src/components/ImportWizard.tsx` (MODIFY)
+Add contextual empty states throughout:
 
-Improve existing flow:
-
-1. **Preserve:** PDF/FDX/Fountain upload
-2. **Add:** Post-import prompt to enhance
-   - "Would you like AI to suggest characters?"
-   - "Would you like to add theme notes?"
-3. **Add:** Direct path to Project Settings after import
-
-### Phase 3: Template Clone
-
-**File:** `src/components/CloneTemplate.tsx` (NEW)
-
-Two template options:
-
-1. **8 Billion Genies Structure** (Full)
-   - 8 sequences, 32 scenes, all metadata
-   - Content cleared, structure preserved
-   - Best for: Writers who want to learn sequence structure
-
-2. **Minimal Template** (Simple)
-   - 3 acts, 1 scene each
-   - Basic config only
-   - Best for: Writers who want structure without complexity
-
-```
-┌────────────────────────────────────────────────────────────┐
-│ Start from a Template                                       │
-│                                                             │
-│ ┌─────────────────────────┐  ┌─────────────────────────┐   │
-│ │     📘 FULL             │  │     📄 MINIMAL          │   │
-│ │                         │  │                         │   │
-│ │  8 Billion Genies       │  │  Three-Act Skeleton     │   │
-│ │  Structure              │  │                         │   │
-│ │                         │  │  • 3 sequences          │   │
-│ │  • 8 sequences          │  │  • 3 placeholder scenes │   │
-│ │  • 32 scene placeholders│  │  • Basic config only    │   │
-│ │  • Dramatic questions   │  │                         │   │
-│ │  • Character archetypes │  │  Perfect for starting   │   │
-│ │                         │  │  fresh with structure   │   │
-│ │  Perfect for learning   │  │                         │   │
-│ │  screenplay structure   │  │                         │   │
-│ │                         │  │                         │   │
-│ │     [ Clone This ]      │  │     [ Clone This ]      │   │
-│ └─────────────────────────┘  └─────────────────────────┘   │
-│                                                             │
-│                                            [ Cancel ]       │
-└────────────────────────────────────────────────────────────┘
+**ProjectSettings - Characters Tab:**
+```tsx
+{characters.length === 0 && (
+  <div className="text-center py-8 text-zinc-500">
+    <div className="text-lg mb-2">No characters defined yet</div>
+    <div className="text-sm mb-4">
+      Add them as you write, or describe your protagonist to get started.
+    </div>
+    <button className="text-blue-400 hover:text-blue-300">
+      + Add Character
+    </button>
+  </div>
+)}
 ```
 
-### Phase 4: External AI Integration
-
-**Documentation only - no code changes**
-
-Create `docs/claude-project-template.md`:
-
-```markdown
-# ScriptSync Development Partner
-
-Paste this into a Claude Project or ChatGPT GPT.
-
-## Instructions for AI
-
-You are a screenplay development partner. Help the writer develop their project through conversation, then export ScriptSync-compatible JSON.
-
-### Your Role
-
-1. **Discuss** - Ask questions about their story, characters, world
-2. **Develop** - Help craft character arcs, theme arguments, scene structure
-3. **Challenge** - Push back on weak motivations, plot holes, clichés
-4. **Export** - Generate valid JSON when requested
-
-### Theme Development
-
-A theme is NOT a topic word like "love" or "identity."
-
-A theme is an ARGUMENT with a counter-argument:
-
-✅ GOOD:
-- core: "Control destroys what makes life worth living"
-- counterArgument: "Without control, chaos destroys everything"
-
-❌ BAD:
-- themes: ["Control", "Freedom"]
-
-### JSON Schema
-
-[Full schema with examples...]
-
-### Conversation Flow
-
-1. "Tell me about your story"
-2. "Who's the protagonist? What do they want?"
-3. "What's standing in their way?"
-4. "What's the theme arguing?"
-5. "Ready to export? Say 'generate JSON'"
+**ProjectSettings - Theme Tab:**
+```tsx
+{!theme && (
+  <div className="text-center py-8 text-zinc-500">
+    <div className="text-lg mb-2">Theme develops through revision</div>
+    <div className="text-sm mb-4">
+      What argument is your story making? What's the counter-argument?
+    </div>
+    <div className="text-xs text-zinc-600 mb-4">
+      Example: "Trust requires vulnerability" vs "Vulnerability invites exploitation"
+    </div>
+    <button className="text-blue-400 hover:text-blue-300">
+      + Define Theme
+    </button>
+  </div>
+)}
 ```
+
+**Tooltips on key controls:**
+- Gear icon: `title="Project Settings (⌘,)"`
+- More tab: `title="Additional tools: Track, Cuts, Dialogue, Ideas"`
+- Connection dots on Timeline: `title="This scene connects to other scenes"`
+
+### Phase 3: Polish
+
+- Post-import prompt: "Would you like to add characters now?" → Opens ProjectSettings Characters tab
+- Keyboard shortcuts help updated with ⌘, shortcut
+- Settings gear icon added to status bar
+
+---
+
+## Part 3: What Was Cut (and Why)
+
+### CloneTemplate.tsx - REMOVED
+
+**Original justification:** "8% of users want structure"
+
+**Why cut:**
+1. Writers who study craft build their own structures—they don't clone others'
+2. The "Full Template" (8BG's 32 scenes) is confusing for beginners
+3. "Minimal Template" is just Quick Start with 3 acts—not a separate feature
+4. Maintenance burden for marginal value
+
+**Alternative:** If users want to see how 8BG is structured, they can open it as a sample project. No need to "clone" it.
+
+### Separate QuickStart.tsx - MERGED
+
+**Original:** New component with its own modal
+
+**Revised:** Inline form in ProjectSelector
+
+**Why:** Same UX, less code, no modal-within-modal confusion
+
+### Separate ImportFromAI.tsx - MERGED
+
+**Original:** New component for JSON import
+
+**Revised:** Tab in existing ImportWizard
+
+**Why:** Consistent import experience, users already know the wizard
 
 ---
 
 ## Part 4: Implementation Checklist
 
-### Phase 1: Foundation (Week 1)
+### Phase 1: Core Functionality ✅ COMPLETE
 
-- [ ] **1.1** Create `QuickStart.tsx` - 30-second project creation
-- [ ] **1.2** Create `ImportFromAI.tsx` - JSON import with validation
-- [ ] **1.3** Create `ProjectSettings.tsx` - Edit all config fields
-- [ ] **1.4** Update `index.tsx` - Add new modes and navigation
-- [ ] **1.5** Add gear icon to Navigation for Project Settings access
-- [ ] **1.6** Test all three paths end-to-end
+- [x] **1.1** Create `ProjectSettings.tsx` with 5 tabs
+- [x] **1.2** Add gear icon to AppStatusBar → opens ProjectSettings
+- [x] **1.3** Add ⌘, keyboard shortcut for ProjectSettings
+- [x] **1.4** Add "Edit Settings" button to ProjectOverview
+- [x] **1.5** Add Quick Start inline form to ProjectSelector
+- [x] **1.6** Add JSON tab to ImportWizard with validation
+- [x] **1.7** Test all paths end-to-end
 
-### Phase 2: Refinement (Week 2)
+### Phase 2: Guidance & Polish ✅ COMPLETE
 
-- [ ] **2.1** Enhance ImportWizard with post-import enrichment prompts
-- [ ] **2.2** Add keyboard shortcuts (Cmd+, for settings)
-- [ ] **2.3** Create CloneTemplate with both Full and Minimal options
-- [ ] **2.4** Add "Suggest Characters" AI feature to Project Settings
+- [x] **2.1** Add empty states to ProjectSettings tabs
+- [x] **2.2** Add tooltips to non-obvious controls
+- [x] **2.3** Add post-import "add characters?" prompt
+- [x] **2.4** Update keyboard shortcuts help modal
+- [x] **2.5** Add toast notifications for project creation
 
-### Phase 3: Documentation (Week 2)
+### Phase 3: Documentation ✅ COMPLETE
 
-- [ ] **3.1** Create `claude-project-template.md`
-- [ ] **3.2** Create `chatgpt-gpt-template.md`
-- [ ] **3.3** Update README with new creation paths
-- [ ] **3.4** Add in-app help tooltips
+- [x] **3.1** Create `claude-prompt-template.md` for AI-assisted development
+- [x] **3.2** Update README with new features (Quick AI Actions, Suggestion Chips, Project Settings)
+- [x] **3.3** Add in-app help links where relevant
 
-### Phase 4: Polish (Week 3)
-
-- [ ] **4.1** Onboarding tour for new users
-- [ ] **4.2** Empty state improvements ("No characters yet - add some?")
-- [ ] **4.3** AI-powered enrichment suggestions in Project Settings
-- [ ] **4.4** Export project config for sharing
+**Additional AI Enhancements (December 18, 2025):**
+- [x] Quick AI Actions panel in AI tab (Analyze Scene, Check Continuity, Alt Versions, Write Dialogue)
+- [x] Suggestion chips above chat input for common questions
+- [x] Inline results display with dismiss/save actions
+- [x] Help link to documentation in AI welcome state
 
 ---
 
 ## Part 5: Technical Dependencies
 
 ### Already Available
-- React 19.2.0
-- TypeScript 5.8.2
-- Claude API integration (geminiService.ts)
-- Gemini API integration (ingestion/aiProcessor.ts)
+- React 19.2.0, TypeScript 5.8.2
 - Storage service (localStorage)
 - Project loading/saving infrastructure
-- Character analysis service (`src/services/characterAnalysis.ts`)
-- Theme model types (`ThemeStatement` in types.ts)
-- Scene status type (`SceneStatus` in types.ts)
-
-### NOT Available (Do Not Use)
-- ❌ Zod (not installed - use manual validation)
-- ❌ Direct `callClaude` export (internal function)
+- Theme model types (`ThemeStatement`)
+- Scene status type (`SceneStatus`)
+- Character analysis service
 
 ### New Services Needed
 - `src/services/projectDefaults.ts` - Default project generation
-- `src/services/validation.ts` - JSON validation extracted from ImportFromAI
+- `src/services/validation.ts` - JSON validation (extracted from ImportWizard)
 
 ### Files to Modify
-- `src/index.tsx` - Add new modes, update ProjectSelector
-- `src/components/Navigation.tsx` - Add settings gear icon
-- `src/services/geminiService.ts` - Add enrichment endpoints
+- `src/App.tsx` - Add ProjectSettings modal state
+- `src/index.tsx` - Add Quick Start to ProjectSelector
+- `src/components/ImportWizard.tsx` - Add JSON tab
+- `src/components/AppStatusBar.tsx` - Add gear icon
+
+### Files to Create
+- `src/components/ProjectSettings.tsx` (NEW)
+- `src/services/projectDefaults.ts` (NEW)
+- `src/services/validation.ts` (NEW)
 
 ---
 
-## Part 6: Sample Test Data
-
-### Minimal Valid ProjectData (Quick Start Output)
-
-```json
-{
-  "config": {
-    "id": "test-project",
-    "title": "Test Project",
-    "logline": "A test screenplay for validation.",
-    "genres": ["Drama"],
-    "characters": []
-  },
-  "sequences": [
-    {
-      "id": "SEQ_1",
-      "title": "Act One",
-      "scenes": [
-        {
-          "id": "SC-001",
-          "sequenceId": "SEQ_1",
-          "title": "Scene 1",
-          "pageNumber": 1,
-          "scriptContent": "",
-          "beats": [],
-          "notes": [],
-          "tracking": [],
-          "summary": "",
-          "status": "draft"
-        }
-      ]
-    }
-  ]
-}
-```
-
-### Rich Valid ProjectData (AI Import Output)
-
-```json
-{
-  "config": {
-    "id": "rich-project",
-    "title": "Rich Project",
-    "logline": "A complex screenplay with all metadata.",
-    "genres": ["Drama", "Thriller"],
-    "characters": [
-      {
-        "name": "Protagonist",
-        "role": "main",
-        "arc": "SKEPTIC → BELIEVER: Learns to trust",
-        "description": "A burned-out detective..."
-      }
-    ],
-    "theme": {
-      "core": "Trust requires vulnerability",
-      "counterArgument": "Vulnerability invites exploitation"
-    },
-    "motifs": ["Locked doors", "Handshakes", "Rain"],
-    "ai": {
-      "styleReferences": ["David Fincher", "Aaron Sorkin"],
-      "toneDescriptor": "Noir thriller with mordant wit"
-    }
-  },
-  "sequences": [...],
-  "rewriteData": {
-    "goals": [...],
-    "pageNotes": {},
-    "openQuestions": {}
-  }
-}
-```
-
----
-
-## Part 7: Success Metrics
+## Part 6: Success Metrics
 
 | Metric | Target | Measurement |
 |--------|--------|-------------|
-| Time to first scene | < 30 seconds | Quick Start path |
-| Richness ceiling | 100% of 8BG | AI Import path |
-| Project modification | Any field editable | Project Settings |
-| Template clarity | No confusion | Minimal + Full options |
-| User satisfaction | > 4/5 | Post-creation survey |
+| Time to first scene (new project) | < 15 seconds | Quick Start path |
+| Time to edit config (existing project) | < 2 seconds | Gear icon → Settings |
+| JSON import success rate | > 95% | Validation catches errors |
+| Empty state helpfulness | Users don't ask "where do I add X?" | Support questions |
 
 ---
 
-## Part 8: Open Questions
+## Part 7: Migration Notes
 
-### Resolved
+### For Existing Projects Using Legacy `themes[]`
 
-1. ✅ **Where does Quick Start fit?** → Phase 1A, equal priority with AI Import
-2. ✅ **How do users edit config after creation?** → Project Settings panel
-3. ✅ **What about template confusion?** → Two templates: Minimal and Full
-4. ✅ **Is 15% gap important?** → No. Progressive enrichment matters more
+When loading projects with old `themes: string[]` format:
+1. Display in ProjectSettings with "(legacy format)" indicator
+2. Offer "Convert to Theme Statement" button
+3. Both formats work—no forced migration
 
-### Still Open
+### Tab Structure Reference
 
-1. **Should Quick Start call AI at all?**
-   - Current plan: No, keep it instant
-   - Alternative: Light AI call for character suggestions
-   - Decision: Start with no AI, add later if users request
+```typescript
+// ContextPanel tabs (already implemented)
+enum Tab {
+  BEATS = 'Beats',
+  NOTES = 'Notes',
+  DOCTOR = 'AI',
+  MORE = 'More'
+}
 
-2. **How to handle project versioning?**
-   - Not in scope for Phase 1-3
-   - Future: Git-style branching for rewrites
+// ProjectSettings tabs (to implement)
+enum SettingsTab {
+  BASIC = 'Basic',
+  CHARACTERS = 'Characters',
+  THEME = 'Theme',
+  AI = 'AI',
+  TRACKING = 'Tracking'
+}
+```
 
-3. **Multi-user collaboration?**
-   - Not in scope
-   - Future: Real-time collaboration like Figma
+---
+
+## Part 8: UX Copywriting Guidelines
+
+### Tone
+- **Confident but not cocky** - "Create your screenplay" not "Let's get started!"
+- **Professional** - No emojis in primary UI (icons are fine)
+- **Clear** - One action per button, obvious labels
+
+### Empty State Pattern
+```
+[Friendly headline - what's missing]
+[Brief explanation - why it matters]
+[Example if helpful]
+[Action button]
+```
+
+### Error Messages
+- "Couldn't parse JSON. Check for missing commas or brackets."
+- "Project needs a title. Add one to continue."
+- NOT: "Error: Invalid input" or "Something went wrong"
 
 ---
 
@@ -645,121 +485,67 @@ A theme is an ARGUMENT with a counter-argument:
 ```
 src/
 ├── components/
-│   ├── ImportWizard.tsx      (existing - enhanced)
-│   ├── ImportFromAI.tsx      (NEW - Phase 1)
-│   ├── QuickStart.tsx        (NEW - Phase 1)
-│   ├── ProjectSettings.tsx   (NEW - Phase 1)
-│   ├── CloneTemplate.tsx     (NEW - Phase 3)
-│   ├── ContextPanel.tsx      (MODIFIED - 4 tabs: Beats, Notes+Passes, AI, More)
-│   ├── CharacterDashboard.tsx (MODIFIED - new analysis)
-│   ├── Navigation.tsx        (MODIFIED - badges, filters, removed duplicate title)
-│   ├── AppStatusBar.tsx      (MODIFIED - clickable project title for ProjectOverview)
-│   └── ProjectOverview.tsx   (MODIFIED - theme display, stats in header)
+│   ├── ProjectSettings.tsx    (NEW - Phase 1)
+│   ├── ImportWizard.tsx       (MODIFY - add JSON tab)
+│   ├── AppStatusBar.tsx       (MODIFY - add gear icon)
+│   ├── ContextPanel.tsx       (DONE - 4 tabs)
+│   ├── TimelineView.tsx       (DONE - hover highlighting)
+│   ├── Navigation.tsx         (DONE - streamlined)
+│   └── ProjectOverview.tsx    (MODIFY - add Edit Settings button)
 ├── services/
-│   ├── geminiService.ts      (modify - add enrichment endpoints)
-│   ├── characterAnalysis.ts  (NEW - writer-focused metrics)
-│   ├── projectDefaults.ts    (NEW - default project generation)
-│   ├── validation.ts         (NEW - JSON validation)
-│   └── ingestion/
-│       └── aiProcessor.ts    (existing)
-├── index.tsx                 (modify - add new modes)
+│   ├── projectDefaults.ts     (NEW)
+│   ├── validation.ts          (NEW)
+│   ├── characterAnalysis.ts   (DONE)
+│   └── geminiService.ts       (existing)
+├── index.tsx                  (MODIFY - Quick Start in selector)
 └── config/
-    └── types.ts              (MODIFIED - ThemeStatement, SceneStatus, motifs)
+    └── types.ts               (DONE - ThemeStatement, SceneStatus)
 
 docs/
 ├── EXECUTION_PLAN_PROJECT_CREATION.md (this file)
-├── claude-project-template.md (NEW - Phase 4)
-└── chatgpt-gpt-template.md   (NEW - Phase 4)
+└── claude-prompt-template.md  (NEW - Phase 3)
 ```
 
 ---
 
-## Appendix B: Codebase Reference
+## Appendix B: Why No Tutorial System (Yet)
 
-| File | Lines | Purpose |
-|------|-------|---------|
-| `src/config/types.ts` | ~275 | Type definitions (ThemeStatement, SceneStatus) |
-| `src/index.tsx` | 345 | App entry, ProjectSelector, mode management |
-| `src/components/ImportWizard.tsx` | 634 | Existing script import flow |
-| `src/components/Navigation.tsx` | ~280 | Sidebar with badges, filters, stats |
-| `src/components/ContextPanel.tsx` | ~780 | 4 tabs: Beats, Notes (with Passes), AI, More |
-| `src/components/CharacterDashboard.tsx` | ~455 | Writer-focused character metrics |
-| `src/services/geminiService.ts` | ~400 | Claude API integration |
-| `src/services/characterAnalysis.ts` | ~280 | Speaking partners, verbal tics, arcs |
-| `src/projects/8-billion-genies/config.ts` | 1,474 | Reference implementation |
+### Arguments Considered
 
----
+**For tutorials:**
+- ProjectSettings is new
+- Theme model is sophisticated
+- Tab consolidation changed mental models
 
-## Appendix C: Migration Notes
+**Against tutorials:**
+- UI is still evolving—tutorials would need rewriting
+- Good UX shouldn't need tutorials
+- Tutorial systems add complexity
+- Writers are smart; they can explore
 
-### For Existing Projects Using Legacy `themes[]`
+### Decision: Empty States Are The Tutorial
 
-When importing or loading projects with the old `themes: string[]` format:
-1. Display them in ProjectOverview with "(legacy format)" indicator
-2. In Project Settings, offer "Convert to Theme Statement" button
-3. Both formats work - no forced migration
+Contextual empty states provide guidance exactly when needed:
+- "No characters yet" → appears in Characters tab when empty
+- "Theme develops through revision" → appears in Theme tab when empty
 
-### Tab Structure Changes
+This is better than a tour because:
+1. No dismissal state to track
+2. Appears in context, not upfront
+3. Disappears naturally when populated
+4. No "skip tutorial" fatigue
 
-**Old 6-tab structure → New 4-tab structure:**
-- "Beats" → "Beats" (unchanged)
-- "Notes" → "Notes" (now includes Passes integration)
-- "Passes" → Integrated into "Notes" tab
-- "Track" → Moved to "More" → "Track" sub-section
-- "Cuts" → Moved to "More" → "Cuts" sub-section
-- "AI" → "AI" (unchanged)
-- NEW: "More" tab with Track, Cuts, Dialogue, Ideas
+### When to Revisit
 
-If any code references old tab names, update to new enum:
-```typescript
-enum Tab {
-  BEATS = 'Beats',
-  NOTES = 'Notes',
-  DOCTOR = 'AI',
-  MORE = 'More'
-}
-```
-
-### Character Metrics
-
-Old `analyzeCharacterVoice` metrics are deprecated:
-- ❌ complexity% - removed
-- ❌ aggression% - removed
-- ❌ questions% - removed
-
-New metrics from `characterAnalysis.ts`:
-- ✓ totalLines
-- ✓ avgWordsPerLine
-- ✓ verbalTics[]
-- ✓ speakingPartners[]
-- ✓ emotionalBeats[]
-- ✓ firstAppearance, lastAppearance, peakActivity
+Add proper onboarding when:
+- User research shows confusion
+- Feature count exceeds discoverability threshold
+- Enterprise customers request it
 
 ---
 
-## Appendix D: UX Copywriting Guidelines
+*This document is the complete planning record for ScriptSync Project Creation Enhancement.*
 
-### Tone
-- **Confident but not cocky** - "Create your screenplay" not "Let's get started!"
-- **Professional** - No emojis in primary UI (except template icons)
-- **Clear** - One action per button, obvious labels
+*Key changes from v1: ProjectSettings prioritized over Quick Start, creation paths consolidated into existing components, CloneTemplate removed, empty states defined as primary guidance mechanism.*
 
-### Labels
-- "Quick Start" (not "New Project" or "Create")
-- "Import Script" (not "Upload" - implies ownership transfer)
-- "Import from AI" (not "Paste JSON" - explains the use case)
-- "Clone Template" (not "Use Template" - clearer about what happens)
-- "Project Settings" (not "Configuration" or "Options")
-
-### Empty States
-- Characters: "No characters defined yet. Add them as you write, or let AI suggest some."
-- Theme: "Theme develops through revision. Come back here after your first draft."
-- Motifs: "Notice any recurring images or symbols? Add them here."
-
----
-
-*This document is the complete planning record for ScriptSync Project Creation Enhancement. Implementation should proceed Phase 1A → 1B → 1C in parallel where possible, with Phase 2-4 following.*
-
-*Key improvement over v1: Promoted Quick Start to critical priority, added Project Settings for post-creation editing, simplified template options, removed academic metrics focus.*
-
-*Last updated: December 18, 2025*
+*Last revised: December 18, 2025*
