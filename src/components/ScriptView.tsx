@@ -27,7 +27,7 @@ const ScriptView: React.FC<ScriptViewProps> = ({ scene, allScenes, onUpdateScrip
 
   // --- STATE ---
   const [isEditing, setIsEditing] = useState(false);
-  const [showLogline, setShowLogline] = useState(true);
+  const [showLogline, setShowLogline] = useState(false);
   const [editContent, setEditContent] = useState(scene.scriptContent);
   const [activeVariant, setActiveVariant] = useState('A');
 
