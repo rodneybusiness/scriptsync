@@ -316,6 +316,7 @@ OPEN QUESTIONS:
 - Did their parents set them up? Did they know each other before the bad date?
 - Should Floyd/Daisy relationship have been more substantial?
 - Why does her final wish only protect Robbie? (needs earned connection)`,
+      arc: `PARALYSIS → ACCOUNTABILITY: Transforms from someone who drifts through life avoiding decisions into a person who makes the ultimate sacrifice. Her journey is the inverse of Floyd's—where he acts without thinking, she learns that some decisions demand to be made. The final wish proves she's no longer running.`,
       aliases: ['Daisy']
     },
     {
@@ -338,6 +339,7 @@ OPEN QUESTIONS:
 - "But they're not your good ideas. They're granted to you" (pg 68) - this isn't true
 - How do we further bind him to theme?
 - Should Alex free Daisy's genie to convert her?`,
+      arc: `OVERCONFIDENCE → HUMILITY: Begins as a coddled idealist who overestimates his competence. His truth-vision wish forces him to see reality—including his own limitations. Through leading the investigation into Floyd's plan and failing, he learns that being right matters less than listening. Becomes worthy of co-leading when he stops trying to prove himself.`,
       aliases: ['Alex']
     },
     {
@@ -364,6 +366,7 @@ OPEN QUESTIONS:
 - Does the wish moment feel too quiet? (in bed, at night, quietly wishes)
 - Need emotional response to realizing June and Ed are gone (pg 117)
 - Why can Robbie kill Idea Man specifically?`,
+      arc: `POWERLESS PROTECTOR → HERO WHO CHOOSES: Born with Superman's heart but no powers, Robbie spent his childhood protecting an adult who should have protected him. His anime hero wish gives him godlike abilities, but Floyd's brainwashing shows that power without moral clarity is corruption. His arc culminates not in defeating Floyd through strength, but through the choice to remain good when darkness was easier. "If he goes dark, we all go" becomes "He chose light, so we could too."`,
       aliases: ['Robbie', 'Gokashi']
     },
     {
@@ -401,6 +404,7 @@ OPEN QUESTIONS:
 - Can we show his ideas actually DON'T work? (Alex sees broken shit like THEY LIVE)
 - Did Daisy say something more hurtful when declining proposal?
 - Floyd realizes late he has no idea how to stop Scouring?`,
+      arc: `HUMILIATED VISIONARY → TYRANT UNDONE BY NEED: Floyd is the hero of his own story—a man whose ideas were mocked until he wished them into mandatory praise. But his wish reveals his fatal flaw: he doesn't want good ideas, he wants to be SEEN as having them. This hollow core dooms him. The Scouring he can't stop, the followers who only pretend to love him, the fake Daisy in his mansion—all symptoms of a man who wished for the wrong thing. His defeat comes not from being overpowered but from being truly seen.`,
       aliases: ['Floyd', 'Idea Man', 'The Idea Man']
     },
     {
@@ -422,6 +426,7 @@ OPEN QUESTIONS:
 - Should we age him down if Seth is playing him?
 - How do we make his reveal more meaningful in the finale?
 - Should he be more specific early about why they should stay inside? (pg 16)`,
+      arc: `HIDDEN SAVIOR → REVEALED GUIDE: Will saved Earth from a previous G-Day and was rewarded with human life. He's been waiting, watching, knowing this would happen again. His arc isn't transformation but revelation—the mentor whose true nature makes everything click. When The Lampwick stands as the last protected place on Earth, we understand: Will didn't just protect a bar, he protected hope itself. His human life was preparation for one final act of service.`,
       aliases: ['Will']
     },
 
@@ -441,6 +446,7 @@ OPEN QUESTIONS:
 - Emotional impact of Mom showing up (pg 17) - need better setup
 - Need Robbie's emotional response when she's gone (pg 117)
 - Can she see through Floyd's lies because she's not fully "real"?`,
+      arc: `BORROWED TIME → UNCONDITIONAL LOVE: June exists on loaned existence—she vanishes if Ed dies. Rather than this making her love conditional, it makes it purer. She chooses to be present, to be Robbie's anchor, knowing her time is finite. Her "off" quality (remnant uncanny valley) contrasts with her genuine warmth. When she vanishes, it's not just loss—it's proof that love persists even when the lover doesn't.`,
       aliases: ['June', 'Mom', 'Robbie\'s Mom']
     },
     {
@@ -457,6 +463,7 @@ OPEN QUESTIONS:
 - How sick is Ed really? Canoodling → desperately sick feels disconnected (pg 25)
 - Is Ed still drinking even though he has a trainer and is fit? (pg 100)
 - If Ed is life-threateningly sick, wouldn't Robbie just wish to cure him? (pg 25)`,
+      arc: `FAILING FATHER → WORTHY SACRIFICE: Ed's alcoholism cost him everything—his health, his relationship with Robbie, his self-respect. His wish to bring back June isn't just about love; it's about giving Robbie what Ed never could. The tragic irony: by tying June's existence to his life, Ed finally has a reason to stop drinking, to stay alive, to be worthy. His eventual death isn't failure—it's the first truly selfless thing he's done.`,
       aliases: ['Ed']
     },
     {
@@ -482,6 +489,7 @@ OPEN QUESTIONS:
 - Did Tim lose his life for nothing? (pg 110 - small print)
 - Stop short of Tim saying "decide who is going to wish me back" (pg 22)
 - Band moment with Brenda feels broad - why can they stop to play music? (pg 45)`,
+      arc: `DANGEROUS OUTSIDER → UNLIKELY SAVIOR: Tim arrives as the wild card—edgier, less trustworthy, the person the group isn't sure about. His accidental fry-wish should feel like cosmic punishment for someone who didn't deserve to be part of the family. But redemption comes in the most Tim way possible: his plumber knowledge—the most unglamorous skill—becomes the key to freeing the imprisoned genies. The man nobody trusted saves everyone using a skill nobody valued.`,
       aliases: ['Tim', 'Fry Guy', 'French Fry']
     },
     {
@@ -508,6 +516,7 @@ OPEN QUESTIONS:
 - "Hooked up" is loose - should she clarify just a kiss? (pg 78)
 - When Michael takes baby without consent, doesn't feel like a favor (pg 19)
 - Should remaining genies be Brenda's Enterprise crew in Star Trek uniforms? (pg 35)`,
+      arc: `RESENTFUL OBLIGATION → CHOSEN COMMITMENT: Brenda didn't want kids but got pregnant; didn't want Michael making decisions but let him. Her Enterprise wish isn't escape—it's her first real choice. The journey forces honesty: the kiss with Tim, confronting Michael, admitting her frustrations. Her arc isn't learning to love motherhood; it's learning to CHOOSE it. When she commits to family at the end, it's the first thing she's chosen for herself since saying "I do."`,
       aliases: ['Brenda']
     },
     {
@@ -528,6 +537,7 @@ OPEN QUESTIONS:
 - Scene pg 77 with Brenda needs to be more honest
 - How/where does his water break? (pg 106)
 - Brenda committing to family doesn't feel earned (pg 106, 110)`,
+      arc: `CONTROLLING DEVOTION → TRUE PARTNERSHIP: Michael loves Brenda completely but expresses it by making choices FOR her—taking the pregnancy, planning their life, assuming he knows best. His arc is learning that love isn't about doing everything for someone; it's about seeing them. The pregnancy-swap wish literalizes his flaw: he took on her burden without asking. Real partnership means sharing burdens, not stealing them.`,
       aliases: ['Michael', 'Bunbun']
     },
     {
@@ -549,6 +559,7 @@ NEEDS DEVELOPMENT:
 - Keep her narratively and visually present through second half (currently disappears)
 - Invest in her as a character
 - She's imprisoned in the wishpool - Daisy eventually saves her`,
+      arc: `SERVANT → TRUE COMPANION: Begins as cosmic obligation—a genie assigned to grant one wish. But Daisy's paralysis means they spend more time together than any human-genie pair. Through that time, genuine connection forms. When Daisy surrenders her at Hope's Hollow, it's not transaction but betrayal of friendship. When Daisy rescues her from the wishpool, it's not just freeing a genie—it's Daisy finally fighting for someone she loves. The final wish goodbye isn't service; it's farewell between friends.`,
       aliases: ['Daisy Genie', 'Hero Genie']
     },
 
