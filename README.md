@@ -23,11 +23,12 @@ A professional screenwriting environment for tracking rewrites, continuity, char
 
 | View | Description |
 |------|-------------|
-| **Script View** | Read and annotate screenplay content with inline notes and version history |
+| **Script View** | Read and annotate screenplay content with inline notes, resizable columns, and AI suggestions |
 | **Beat Board** | Drag-and-drop beat cards organized by sequence for story structure visualization |
 | **Character Dashboard** | Track appearances, dialogue counts, and arc progression across scenes |
 | **Timeline View** | Visualize scene connections, parallel storylines, and causal relationships |
-| **Analytics Dashboard** | Word counts, pacing analysis, character dialogue distribution |
+| **Rewrite Tracker** | Track rewrite goals, page notes, and open questions from development feedback |
+| **Project Overview** | View all project config data including themes, characters, and AI settings |
 | **Welcome Page** | Quick actions, recent projects, and feature overview |
 
 ### Advanced Capabilities
@@ -35,7 +36,10 @@ A professional screenwriting environment for tracking rewrites, continuity, char
 - **Real PDF Parsing**: Import PDF screenplays with automatic scene/character detection
 - **Fountain Support**: Import/export industry-standard Fountain format
 - **Version History**: Automatic snapshots with diff comparison and restore
-- **AI Analysis**: Scene gap analysis, dialogue generation, beat alternatives
+- **Claude AI Integration**: Scene gap analysis, dialogue generation, beat alternatives (Opus 4, Sonnet 4, Sonnet 4.5)
+- **Proactive AI Agents**: Background analysis with memory palace for persistent context
+- **Resizable Columns**: Drag-and-drop column layout with customizable widths
+- **Session Memory**: AI remembers corrections and preferences within sessions
 - **Mobile Responsive**: Touch-friendly interface with swipe gestures
 - **Accessibility**: Screen reader support, keyboard navigation, high contrast mode
 - **Export Options**: Fountain, Final Draft XML, PDF, plain text, CSV beat sheets
@@ -52,7 +56,7 @@ npm install
 
 # Configure AI (optional)
 cp .env.local.example .env.local
-# Edit .env.local and add your VITE_GEMINI_API_KEY
+# Edit .env.local and add your ANTHROPIC_API_KEY for Claude AI
 
 # Start development
 npm run dev
@@ -361,8 +365,8 @@ Set in deployment platform:
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `VITE_GEMINI_API_KEY` | For AI | Google Gemini API key |
-| `VITE_ACTIVE_PROJECT` | Optional | Default project to load |
+| `ANTHROPIC_API_KEY` | For AI | Anthropic Claude API key |
+| `VITE_ACTIVE_PROJECT` | Optional | Default project to load (e.g., `8-billion-genies`) |
 
 ---
 
@@ -521,19 +525,38 @@ const result = await parsePDF(file, (progress) => {
 // Result includes: title, author, scenes, characters, rawText
 ```
 
-### AI Services
+### AI Services (Claude)
 
 ```typescript
-import { analyzeSceneGap, generateDialogue, chatWithAI } from './services/geminiService';
+import {
+  analyzeSceneGap,
+  chatWithScriptDoctor,
+  generateAlternativeBeat
+} from './services/geminiService';
 
-// Analyze scene
+// Analyze scene gaps
 const analysis = await analyzeSceneGap(scene, allScenes, config);
 
-// Generate dialogue
-const dialogue = await generateDialogue(scene, 'CHARACTER', 'intent', allScenes, config);
+// Chat with Dr. Claude (script doctor)
+const response = await chatWithScriptDoctor(message, scene, allScenes, config, chatHistory);
 
-// Chat
-const response = await chatWithAI(messages, scene, allScenes, config);
+// Generate alternative beat
+const alternative = await generateAlternativeBeat(scene, beatDescription, allScenes, config);
+```
+
+### Memory Palace (Persistent Context)
+
+```typescript
+import { memoryPalace } from './services/memoryPalace';
+
+// Store character voice correction
+memoryPalace.storeCharacterVoice(characterName, correction);
+
+// Get character voice guidelines
+const guidelines = memoryPalace.getCharacterVoice(characterName);
+
+// Store story context
+memoryPalace.storeStoryContext(key, value);
 ```
 
 ---
@@ -554,24 +577,40 @@ npm run lint     # Lint code
 scriptsync/
 ├── src/
 │   ├── components/          # React components
-│   │   ├── AnalyticsDashboard.tsx
-│   │   ├── BeatBoard.tsx
-│   │   ├── CharacterDashboard.tsx
-│   │   ├── ScriptView.tsx
-│   │   ├── TimelineView.tsx
-│   │   ├── WelcomePage.tsx
+│   │   ├── BeatBoard.tsx           # Sequence/beat visualization
+│   │   ├── CharacterDashboard.tsx  # Character tracking
+│   │   ├── ColumnWrapper.tsx       # Resizable column container
+│   │   ├── ContextPanel.tsx        # Side panel (notes, AI chat)
+│   │   ├── Navigation.tsx          # Scene browser sidebar
+│   │   ├── ProjectOverview.tsx     # Project config viewer
+│   │   ├── ResizeHandle.tsx        # Column resize handle
+│   │   ├── RewriteTracker.tsx      # Rewrite goals/notes tracker
+│   │   ├── ScriptView.tsx          # Main script editor
+│   │   ├── SuggestionsPanel.tsx    # AI suggestions display
+│   │   ├── TimelineView.tsx        # Scene connections timeline
 │   │   └── ...
 │   ├── config/              # Types and context
 │   │   ├── types.ts
 │   │   └── ProjectContext.tsx
+│   ├── contexts/            # React contexts
+│   │   └── AIAgentsContext.tsx     # Proactive AI agents
 │   ├── services/            # Business logic
 │   │   ├── exportService.ts
-│   │   ├── geminiService.ts
+│   │   ├── geminiService.ts        # Claude AI integration
+│   │   ├── memoryPalace.ts         # Persistent AI memory
 │   │   ├── pdfParser.ts
-│   │   ├── storageService.ts
-│   │   └── versionHistory.ts
+│   │   ├── storage.ts
+│   │   ├── versionHistory.ts
+│   │   └── voiceKeeper.ts          # Character voice tracking
 │   ├── hooks/               # Custom React hooks
-│   │   └── useMobileLayout.ts
+│   │   ├── useColumnLayout.ts      # Resizable columns
+│   │   ├── useKeyboardShortcuts.ts
+│   │   ├── useMobileLayout.ts
+│   │   ├── useProjectCRUD.ts
+│   │   └── useScriptMembrane.ts    # AI script analysis
+│   ├── projects/            # Project data
+│   │   ├── 8-billion-genies/       # Sample project
+│   │   └── bell-bottoms/           # Sample project
 │   └── test/                # Test setup
 ├── dist/                    # Production build
 ├── vercel.json              # Vercel config
@@ -589,7 +628,7 @@ MIT
 
 ## Support
 
-- **Issues**: [GitHub Issues](https://github.com/your-repo/scriptsync/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/your-repo/scriptsync/discussions)
+- **Issues**: [GitHub Issues](https://github.com/rodneybusiness/scriptsync/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/rodneybusiness/scriptsync/discussions)
 
-Built with React, TypeScript, Vite, and Google Gemini AI.
+Built with React, TypeScript, Vite, and Anthropic Claude AI.
