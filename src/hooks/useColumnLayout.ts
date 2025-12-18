@@ -103,9 +103,13 @@ export function useColumnLayout() {
 
     const config = COLUMN_CONFIGS[resizingColumn];
     const delta = clientX - resizeStartX.current;
+
+    // For the context (right) column, invert delta - dragging left should increase width
+    const adjustedDelta = resizingColumn === 'context' ? -delta : delta;
+
     const newWidth = Math.max(
       config.minWidth,
-      Math.min(config.maxWidth, resizeStartWidth.current + delta)
+      Math.min(config.maxWidth, resizeStartWidth.current + adjustedDelta)
     );
 
     setColumnWidths(prev => ({

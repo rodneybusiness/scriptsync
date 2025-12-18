@@ -297,8 +297,14 @@ const App: React.FC<AppProps> = ({ onBackToProjects }) => {
                   {/* Resize handle between columns (not after the last one) */}
                   {index < columnOrder.length - 1 && (
                     <ResizeHandle
-                      onMouseDown={(e) => startResize(columnId, e.clientX)}
-                      isResizing={resizingColumn === columnId}
+                      onMouseDown={(e) => {
+                        // Resize the column to the LEFT of the handle (current column)
+                        // unless it's a flex column, then resize the column to the RIGHT
+                        const nextColumnId = columnOrder[index + 1];
+                        const targetColumn = columnId === 'script' ? nextColumnId : columnId;
+                        startResize(targetColumn, e.clientX);
+                      }}
+                      isResizing={resizingColumn === columnId || resizingColumn === columnOrder[index + 1]}
                     />
                   )}
                 </React.Fragment>
