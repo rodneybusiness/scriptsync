@@ -183,7 +183,7 @@ const ContextPanel: React.FC<ContextPanelProps> = ({ scene, allScenes, boneyard,
   };
 
   return (
-    <div className="w-96 bg-zinc-900 border-l border-zinc-800 flex flex-col h-full">
+    <div className="w-full bg-transparent flex flex-col h-full">
       {/* Tabs */}
       <div className="flex border-b border-zinc-800 overflow-x-auto scrollbar-hide shrink-0">
         {Object.values(Tab).map((tab) => (

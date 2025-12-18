@@ -34,7 +34,7 @@ const Navigation: React.FC<NavigationProps> = ({ currentSceneId, onSelectScene }
   })).filter(seq => seq.scenes.length > 0);
 
   return (
-    <div className="w-72 bg-zinc-950 border-r border-zinc-800 flex flex-col h-full font-sans">
+    <div className="w-full bg-transparent flex flex-col h-full font-sans">
       <div className="p-4 border-b border-zinc-800">
         <h1 className="text-lg font-bold text-zinc-100 tracking-tight">ScriptSync</h1>
         <p className="text-xs text-zinc-500 uppercase tracking-wider mt-1">{config.title}</p>
