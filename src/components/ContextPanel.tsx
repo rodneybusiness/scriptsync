@@ -995,7 +995,7 @@ const ContextPanel: React.FC<ContextPanelProps> = ({ scene, allScenes, boneyard,
               />
               <div className="flex justify-end mt-2">
                 <button onClick={handleSendMessage} disabled={isChatting} className="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded transition shadow-lg disabled:opacity-50">
-                  SEND MESSAGE
+                  Send Message
                 </button>
               </div>
             </div>

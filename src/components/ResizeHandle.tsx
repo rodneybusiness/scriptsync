@@ -22,6 +22,7 @@ const ResizeHandle: React.FC<ResizeHandleProps> = ({ onMouseDown, isResizing }) 
         ${isResizing ? 'bg-blue-500/30' : ''}
       `}
       onMouseDown={onMouseDown}
+      title="Drag to resize"
     >
       {/* Visible grab bar - always visible */}
       <div

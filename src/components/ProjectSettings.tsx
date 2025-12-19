@@ -182,7 +182,7 @@ const ProjectSettings: React.FC<ProjectSettingsProps> = ({
         {/* Footer */}
         <div className="flex items-center justify-between p-4 border-t border-zinc-800 bg-zinc-900/50">
           <div className="text-xs text-zinc-500">
-            {hasChanges ? 'Unsaved changes' : 'No changes'}
+            {hasChanges ? 'Unsaved Changes' : 'No Changes'}
           </div>
           <div className="flex gap-2">
             <button
