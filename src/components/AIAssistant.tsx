@@ -13,7 +13,7 @@ import {
   checkContinuity,
   chatWithScriptDoctor,
   isAIAvailable,
-} from '../services/geminiService';
+} from '../services/aiService';
 import { Spinner } from './LoadingStates';
 
 // =============================================================================

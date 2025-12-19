@@ -39,7 +39,7 @@ src/
 │   ├── AppStatusBar.tsx       # Top nav with view switcher
 │   └── ...
 ├── services/             # Business logic
-│   ├── geminiService.ts       # AI integration (uses Claude, not Gemini!)
+│   ├── aiService.ts           # AI integration (Claude/Anthropic)
 │   ├── characterAnalysis.ts   # Writer-focused character metrics
 │   ├── pdfParser.ts           # PDF screenplay parsing
 │   ├── exportService.ts       # Fountain/FDX/CSV export
@@ -87,13 +87,11 @@ src/
 
 1. **No linter configured** - No `npm run lint` command. Be careful with code style.
 
-2. **Large service files** - `geminiService.ts` is 42KB. Work in sections.
+2. **Large service files** - `aiService.ts` is 42KB. Work in sections.
 
-3. **AI service naming mismatch** - File is named `geminiService.ts` but actually uses **Claude (Anthropic)**, not Gemini. Historical naming, works correctly.
+3. **Environment variables** - AI features need `VITE_ANTHROPIC_API_KEY` in `.env.local`.
 
-4. **Environment variables** - AI features need `VITE_ANTHROPIC_API_KEY` in `.env.local`.
-
-5. **Test coverage is sparse** - 6 test files, 101 tests total. Core flows covered, not exhaustive.
+4. **Test coverage is sparse** - 6 test files, 101 tests total. Core flows covered, not exhaustive.
 
 ## Key Patterns
 
@@ -101,7 +99,7 @@ src/
 React Context (`ProjectContext`, `AIAgentsContext`) - no Redux.
 
 ### AI Integration
-All AI calls go through `services/geminiService.ts` (despite the name, it's Claude).
+All AI calls go through `services/aiService.ts` (Claude/Anthropic).
 Memory persistence via `services/memoryPalace.ts`.
 
 ### Theme Model

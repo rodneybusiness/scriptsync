@@ -16,7 +16,7 @@ import {
   addAvoidPattern,
   addCharacterNote,
   setSessionPreferredStyle
-} from '../services/geminiService';
+} from '../services/aiService';
 
 interface SessionMemoryPanelProps {
   isOpen: boolean;

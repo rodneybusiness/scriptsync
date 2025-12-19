@@ -15,7 +15,7 @@ import {
   getSessionMemoryState,
   generateDialogue,
   checkContinuity
-} from '../services/geminiService';
+} from '../services/aiService';
 import { SessionMemoryPanel } from './SessionMemoryPanel';
 import { useAIAgents, useSceneSuggestions } from '../contexts/AIAgentsContext';
 import { MarginNotesContainer } from './MarginNote';

@@ -568,7 +568,7 @@ import {
   analyzeSceneGap,
   chatWithScriptDoctor,
   generateAlternativeBeat
-} from './services/geminiService';
+} from './services/aiService';
 
 // Analyze scene gaps
 const analysis = await analyzeSceneGap(scene, allScenes, config);

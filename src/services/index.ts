@@ -2,7 +2,7 @@
  * Services module exports
  */
 
-export * from './geminiService';
+export * from './aiService';
 export * from './scriptUtils';
 export * from './ttsService';
 export * from './storage';
