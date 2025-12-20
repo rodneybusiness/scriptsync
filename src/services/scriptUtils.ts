@@ -160,7 +160,8 @@ export const parseFountainToReact = (line: string, _index: number): ParsedLine =
 
   // Transition - Right aligned, uppercase
   // Industry standard: 6" from left edge (right-aligned)
-  if (trimmed.endsWith(' TO:') || trimmed === 'FADE OUT.' || trimmed === 'CUT TO BLACK.' || trimmed === 'FADE IN:') {
+  // Match standalone transitions OR "FADE IN:" at start of line (common screenplay opening)
+  if (trimmed.endsWith(' TO:') || trimmed === 'FADE OUT.' || trimmed === 'CUT TO BLACK.' || trimmed === 'FADE IN:' || trimmed.startsWith('FADE IN:')) {
     return {
       type: 'transition',
       content: trimmed,
