@@ -78,10 +78,18 @@ src/
 - **Session Memory**: AI learns corrections within session
 
 ### ContextPanel Structure (4 tabs)
-- **Beats**: Scene beats with completion tracking
+- **Beats**: Scene beats with completion tracking + progress bar
 - **Notes**: Scene notes + Studio feedback + Active Passes (integrated)
 - **AI**: Quick Actions + Script Doctor chat
 - **More**: Track, Cuts, Dialogue, Ideas (overflow tools)
+
+### ADHD-Friendly UI (Dec 2025)
+- **Beat progress bar**: Visual "X of Y complete" indicator at top of Beats tab
+- **Larger touch targets**: Quick Actions buttons increased from px-3 py-2 to px-4 py-2.5
+- **Bigger result cards**: AI analysis results can expand to 50% viewport height
+- **Compact status badges**: Tone/Constraints/Memory as inline badges instead of stacked cards
+- **Visual section dividers**: Border separators between Notes tab sections
+- **Larger suggestion chips**: Increased padding for easier clicking
 
 ## Sharp Edges
 
