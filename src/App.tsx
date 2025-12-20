@@ -32,8 +32,10 @@ const ExportModal = lazy(() => import('./components/ExportModal'));
 const ProjectOverview = lazy(() => import('./components/ProjectOverview'));
 const RewriteTracker = lazy(() => import('./components/RewriteTracker'));
 const ProjectSettings = lazy(() => import('./components/ProjectSettings'));
+const PlantPayoffTracker = lazy(() => import('./components/PlantPayoffTracker'));
+const CommandPalette = lazy(() => import('./components/CommandPalette'));
 
-type ViewMode = 'script' | 'timeline' | 'characters' | 'board' | 'tracker';
+type ViewMode = 'script' | 'timeline' | 'characters' | 'board' | 'tracker' | 'plants';
 
 interface AppProps {
   onBackToProjects?: () => void;
@@ -50,6 +52,19 @@ const App: React.FC<AppProps> = ({ onBackToProjects }) => {
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [isProjectOverviewOpen, setIsProjectOverviewOpen] = useState(false);
   const [isProjectSettingsOpen, setIsProjectSettingsOpen] = useState(false);
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+
+  // Command palette keyboard shortcut (⌘K / Ctrl+K)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setIsCommandPaletteOpen(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   // Column layout management
   const {
@@ -270,6 +285,30 @@ const App: React.FC<AppProps> = ({ onBackToProjects }) => {
               </Suspense>
             </ErrorBoundary>
           )}
+
+          {viewMode === 'plants' && (
+            <ErrorBoundary level="component">
+              <Suspense fallback={
+                <div className="flex-1 bg-zinc-950 p-8">
+                  <div className="max-w-4xl mx-auto">
+                    <div className="h-8 bg-zinc-800 rounded w-48 mb-4 animate-pulse" />
+                    <div className="grid grid-cols-4 gap-3 mb-6">
+                      {Array.from({ length: 4 }).map((_, i) => (
+                        <div key={i} className="h-20 bg-zinc-900 rounded-lg animate-pulse" />
+                      ))}
+                    </div>
+                    <div className="space-y-3">
+                      {Array.from({ length: 6 }).map((_, i) => (
+                        <div key={i} className="h-24 bg-zinc-900 rounded-lg animate-pulse" />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              }>
+                <PlantPayoffTracker onSelectScene={handleNavigate} />
+              </Suspense>
+            </ErrorBoundary>
+          )}
         </div>
 
         {/* Export Modal */}
@@ -314,6 +353,21 @@ const App: React.FC<AppProps> = ({ onBackToProjects }) => {
                 setIsProjectSettingsOpen(false);
               }}
               onClose={() => setIsProjectSettingsOpen(false)}
+            />
+          </Suspense>
+        )}
+
+        {/* Command Palette (⌘K) */}
+        {isCommandPaletteOpen && (
+          <Suspense fallback={null}>
+            <CommandPalette
+              isOpen={isCommandPaletteOpen}
+              onClose={() => setIsCommandPaletteOpen(false)}
+              onSelectScene={handleNavigate}
+              onChangeView={(view) => setViewMode(view as ViewMode)}
+              onOpenExport={() => { setIsCommandPaletteOpen(false); setIsExportOpen(true); }}
+              onOpenSettings={() => { setIsCommandPaletteOpen(false); setIsProjectSettingsOpen(true); }}
+              allScenes={allScenes}
             />
           </Suspense>
         )}

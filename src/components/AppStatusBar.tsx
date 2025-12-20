@@ -13,10 +13,12 @@ import React, { useState } from 'react';
 import { useAIAgents } from '../contexts/AIAgentsContext';
 import { StatusIndicator } from './StatusIndicator';
 
+type ViewMode = 'script' | 'timeline' | 'characters' | 'board' | 'tracker' | 'plants';
+
 interface AppStatusBarProps {
   projectTitle: string;
-  viewMode: 'script' | 'timeline' | 'characters' | 'board' | 'tracker';
-  onViewModeChange: (mode: 'script' | 'timeline' | 'characters' | 'board' | 'tracker') => void;
+  viewMode: ViewMode;
+  onViewModeChange: (mode: ViewMode) => void;
   sequenceId?: string;
   onOpenInfo: () => void;
   onOpenExport: () => void;
@@ -62,17 +64,17 @@ const AppStatusBar: React.FC<AppStatusBarProps> = ({
 
         {/* Compact View Switcher */}
         <div className="flex bg-zinc-950/80 rounded-lg p-0.5 border border-zinc-800/50">
-          {(['script', 'board', 'timeline', 'characters', ...(hasRewriteData ? ['tracker'] : [])] as const).map((mode) => (
+          {(['script', 'board', 'timeline', 'characters', 'plants', ...(hasRewriteData ? ['tracker'] : [])] as ViewMode[]).map((mode) => (
             <button
               key={mode}
-              onClick={() => onViewModeChange(mode as 'script' | 'timeline' | 'characters' | 'board' | 'tracker')}
+              onClick={() => onViewModeChange(mode)}
               className={`px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide rounded-md transition-all ${
                 viewMode === mode
                   ? 'bg-zinc-800 text-zinc-100 shadow-sm'
                   : 'text-zinc-500 hover:text-zinc-300'
               }`}
             >
-              {mode === 'characters' ? 'Arcs' : mode === 'board' ? 'Board' : mode === 'tracker' ? 'Rewrite' : mode.charAt(0).toUpperCase() + mode.slice(1)}
+              {mode === 'characters' ? 'Arcs' : mode === 'board' ? 'Board' : mode === 'tracker' ? 'Rewrite' : mode === 'plants' ? 'Plants' : mode.charAt(0).toUpperCase() + mode.slice(1)}
             </button>
           ))}
         </div>

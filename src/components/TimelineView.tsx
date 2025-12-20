@@ -23,15 +23,23 @@ const estimatePages = (content: string): number => {
   return Math.max(0.5, Math.round((words / 250) * 2) / 2);
 };
 
-/** Map sequences to acts (simple heuristic: first 2 = Act 1, middle = Act 2, last 2 = Act 3) */
-const getActForSequence = (seqIndex: number, totalSequences: number): 1 | 2 | 3 => {
-  if (totalSequences <= 3) {
-    return (seqIndex + 1) as 1 | 2 | 3;
+/** Act type including 2A and 2B */
+type ActType = '1' | '2A' | '2B' | '3';
+
+/** Map sequences to acts (Act 1: ~25%, Act 2A: ~25%, Act 2B: ~25%, Act 3: ~25%) */
+const getActForSequence = (seqIndex: number, totalSequences: number): ActType => {
+  if (totalSequences <= 4) {
+    // For small scripts, distribute evenly
+    if (seqIndex === 0) return '1';
+    if (seqIndex === totalSequences - 1) return '3';
+    if (seqIndex <= Math.floor(totalSequences / 2)) return '2A';
+    return '2B';
   }
   const proportion = seqIndex / totalSequences;
-  if (proportion < 0.25) return 1;
-  if (proportion < 0.75) return 2;
-  return 3;
+  if (proportion < 0.25) return '1';
+  if (proportion < 0.50) return '2A';
+  if (proportion < 0.75) return '2B';
+  return '3';
 };
 
 const TimelineView: React.FC<TimelineViewProps> = ({ onSelectScene, scriptData }) => {
@@ -53,7 +61,12 @@ const TimelineView: React.FC<TimelineViewProps> = ({ onSelectScene, scriptData }
 
   // Calculate act totals
   const actStats = useMemo(() => {
-    const stats = { 1: { pages: 0, scenes: 0 }, 2: { pages: 0, scenes: 0 }, 3: { pages: 0, scenes: 0 } };
+    const stats: Record<ActType, { pages: number; scenes: number }> = {
+      '1': { pages: 0, scenes: 0 },
+      '2A': { pages: 0, scenes: 0 },
+      '2B': { pages: 0, scenes: 0 },
+      '3': { pages: 0, scenes: 0 }
+    };
     scenesWithMeta.forEach(s => {
       stats[s.act].pages += s.pages;
       stats[s.act].scenes += 1;
@@ -124,11 +137,12 @@ const TimelineView: React.FC<TimelineViewProps> = ({ onSelectScene, scriptData }
     return connected;
   }, [hoveredSceneId, scenesWithMeta]);
 
-  // Colors for acts
-  const actColors = {
-    1: { bg: 'bg-blue-900/20', border: 'border-blue-700/50', text: 'text-blue-400', bar: 'bg-blue-500' },
-    2: { bg: 'bg-amber-900/20', border: 'border-amber-700/50', text: 'text-amber-400', bar: 'bg-amber-500' },
-    3: { bg: 'bg-red-900/20', border: 'border-red-700/50', text: 'text-red-400', bar: 'bg-red-500' }
+  // Colors for acts - cool to warm progression
+  const actColors: Record<ActType, { bg: string; border: string; text: string; bar: string; label: string }> = {
+    '1':  { bg: 'bg-blue-900/20',    border: 'border-blue-700/50',    text: 'text-blue-400',    bar: 'bg-blue-500',    label: 'Setup' },
+    '2A': { bg: 'bg-emerald-900/20', border: 'border-emerald-700/50', text: 'text-emerald-400', bar: 'bg-emerald-500', label: 'Fun & Games' },
+    '2B': { bg: 'bg-amber-900/20',   border: 'border-amber-700/50',   text: 'text-amber-400',   bar: 'bg-amber-500',   label: 'Bad Guys Close In' },
+    '3':  { bg: 'bg-red-900/20',     border: 'border-red-700/50',     text: 'text-red-400',     bar: 'bg-red-500',     label: 'Resolution' }
   };
 
   return (
@@ -144,29 +158,35 @@ const TimelineView: React.FC<TimelineViewProps> = ({ onSelectScene, scriptData }
 
         {/* Act Overview Bar */}
         <div className="mb-8">
-          <div className="flex gap-1 h-10 rounded-lg overflow-hidden border border-zinc-800">
-            {([1, 2, 3] as const).map(act => {
-              const width = totalPages > 0 ? (actStats[act].pages / totalPages) * 100 : 33;
+          <div className="flex gap-1 h-12 rounded-lg overflow-hidden border border-zinc-800">
+            {(['1', '2A', '2B', '3'] as ActType[]).map(act => {
+              const width = totalPages > 0 ? (actStats[act].pages / totalPages) * 100 : 25;
               return (
                 <div
                   key={act}
-                  className={`${actColors[act].bg} flex items-center justify-center transition-all`}
-                  style={{ width: `${width}%` }}
+                  className={`${actColors[act].bg} flex flex-col items-center justify-center transition-all`}
+                  style={{ width: `${Math.max(width, 8)}%` }}
                 >
                   <span className={`text-xs font-bold ${actColors[act].text}`}>
                     ACT {act}
                   </span>
-                  <span className="text-[10px] text-zinc-500 ml-2">
+                  <span className="text-[10px] text-zinc-500">
                     ~{Math.round(actStats[act].pages)}p
                   </span>
                 </div>
               );
             })}
           </div>
-          <div className="flex justify-between mt-1 text-[10px] text-zinc-600">
-            <span>Setup</span>
-            <span>Confrontation</span>
-            <span>Resolution</span>
+          <div className="flex mt-1 text-[10px] text-zinc-600">
+            {(['1', '2A', '2B', '3'] as ActType[]).map(act => (
+              <div
+                key={act}
+                className="text-center"
+                style={{ width: `${totalPages > 0 ? Math.max((actStats[act].pages / totalPages) * 100, 8) : 25}%` }}
+              >
+                {actColors[act].label}
+              </div>
+            ))}
           </div>
         </div>
 
@@ -359,12 +379,15 @@ const TimelineView: React.FC<TimelineViewProps> = ({ onSelectScene, scriptData }
         </div>
 
         {/* Legend */}
-        <div className="flex items-center gap-6 text-[10px] text-zinc-500 border-t border-zinc-800 pt-4">
+        <div className="flex flex-wrap items-center gap-4 text-[10px] text-zinc-500 border-t border-zinc-800 pt-4">
           <span className="flex items-center gap-1">
             <div className="w-3 h-3 bg-blue-900/50 rounded" /> Act 1
           </span>
           <span className="flex items-center gap-1">
-            <div className="w-3 h-3 bg-amber-900/50 rounded" /> Act 2
+            <div className="w-3 h-3 bg-emerald-900/50 rounded" /> Act 2A
+          </span>
+          <span className="flex items-center gap-1">
+            <div className="w-3 h-3 bg-amber-900/50 rounded" /> Act 2B
           </span>
           <span className="flex items-center gap-1">
             <div className="w-3 h-3 bg-red-900/50 rounded" /> Act 3
@@ -374,7 +397,7 @@ const TimelineView: React.FC<TimelineViewProps> = ({ onSelectScene, scriptData }
             <div className="w-2 h-2 bg-purple-500 rounded-full" /> Has connections
           </span>
           <span className="flex items-center gap-1">
-            <div className="w-3 h-1 bg-emerald-500/60 rounded" /> Character present
+            <div className="w-3 h-1 bg-teal-500/60 rounded" /> Character present
           </span>
         </div>
       </div>
